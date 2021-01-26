@@ -1,0 +1,99 @@
+---
+title: "How data.table's fread can save you a lot of time and memory"
+output: 
+   html_document:
+    toc: yes
+    toc_depth: 3
+    css: ../../style.css
+params:
+  date: !r Sys.Date()    
+---
+
+```{r, warning=FALSE, message=FALSE}
+library(knitr)
+library(readr)
+library(data.table)
+library(tictoc)
+library(pryr)
+```
+
+```{r,setup, include=FALSE, eval=TRUE}
+options(knitr.table.format = "html")
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width = 12, fig.height = 8)
+```
+
+<div>Author: Rick Dean</div>
+<div>Article date: `r params$date`</div>
+
+<div class="abstract">
+  <p class="abstract">Abstract</p>
+The following notes/R scripts are inspired on an article by Jozef Hajnala,
+[How data.table’s fread can save you a lot of time and memory, and take input from shell commands"](https://jozef.io/r917-fread-comparisons/)
+</div>  
+
+# Compare Timing `utils::read.csv()`, `readr::read_csv()`, and `data.table::fread()`
+## Establish data directory
+
+<div class="note">Note: We are using the [Airline on-time performance data](http://stat-computing.org/dataexpo/2009/the-data.html) referenced in the article.</div>
+
+Establish source directory for the source airline data file
+```{r}
+source_file <- file.path("E:/airline_data/january_2020.csv")
+if(!base::file.exists(source_file)){
+  stop("Source airline file does not exist.")
+}
+```
+
+## Using `utils::read.csv()`
+Read and time airline data using `utils::read.csv()`
+```{r}
+tictoc::tic("utils::read.csv()")
+base_airline_df <- utils::read.csv(source_file)
+tictoc::toc()
+```
+## Using `readr::read_csv()`
+Read and time airline data using `readr::read_csv()`
+```{r}
+tictoc::tic("readr::read_csv()")
+readr_airline_df <- readr::read_csv(source_file, progress = F)
+tictoc::toc()
+```
+## Using `data.table::fread()`
+Read and time airline data using `data.table::fread()`
+```{r}
+tictoc::tic("data.table::fread()")
+fread_airline_df <- data.table::fread(source_file)
+tictoc::toc()
+```
+
+# Compare memory usage
+Memory change for `utils::read.csv()`
+```{r}
+pryr::mem_change(utils::read.csv(source_file))
+```
+
+Memory change for `readr::read_csv()`
+```{r}
+pryr::mem_change(readr::read_csv(source_file))
+```
+
+Memory change for `data.table::fread()`
+```{r}
+pryr::mem_change(data.table::fread(source_file))
+```
+
+# Compare data frame size
+Data frame size for `utils::read.csv()`
+```{r}
+pryr::object_size(base_airline_df)
+```
+
+Data frame size for `readr::read_csv()`
+```{r}
+pryr::object_size(readr_airline_df)
+```
+
+Data frame size for `data.table::fread()`
+```{r}
+pryr::object_size(fread_airline_df)
+```

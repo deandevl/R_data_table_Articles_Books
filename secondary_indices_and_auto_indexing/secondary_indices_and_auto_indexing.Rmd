@@ -1,0 +1,188 @@
+---
+title: "Secondary indices and auto indexing -- data.table"
+output: 
+   html_document:
+    toc: yes
+    toc_depth: 3
+    css: ../style.css
+params:
+  date: !r Sys.Date()    
+---
+
+```{r, warning=FALSE, message=FALSE}
+library(knitr)
+library(kableExtra)
+library(data.table)
+library(tictoc)
+```
+
+```{r,setup, include=FALSE, eval=TRUE}
+options(knitr.table.format = "html", width = 140)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width = 12, fig.height = 8)
+```
+
+<div>Author: Rick Dean</div>
+<div>Article date: `r params$date`</div>
+
+<div class="abstract">
+  <p class="abstract">Abstract</p>
+The following contains notes/R scripts on learning data.table from the R package vignette [Secondary indices and auto indexing](https://cloud.r-project.org/web/packages/data.table/vignettes/datatable-secondary-indices-and-auto-indexing.html)
+</div>  
+
+# Data
+## Read in the NYC-flights14 data
+<div class="note">Note: As referenced in the vignette, we have downloaded the [flight data](https://raw.githubusercontent.com/Rdatatable/data.table/master/vignettes/flights14.csv) csv file.</div>
+```{r}
+nyc_flights14_file <- file.path("E:/airline_data/flights14.csv")
+if(!base::file.exists(nyc_flights14_file)){
+  stop("Source airline file does not exist.")
+}
+flights <- data.table::fread(nyc_flights14_file)
+str(flights)
+```
+# Secondary indices
+
+## What are secondary indices?
+<blockquote>
+Secondary indices are similar to keys in data.table, except for two major differences:
+
+    It doesn’t physically reorder the entire data.table in RAM. Instead, it only computes the order for the set of columns provided and stores that order vector in an additional attribute called index.
+
+    There can be more than one secondary index for a data.table (as we will see below).
+</blockquote>
+
+## Set secondary indices
+How can we set the column *origin* as a secondary index?
+```{r}
+setindex(flights, origin)
+```
+We can also set the index using character vectors:
+```{r}
+setindexv(flights, "origin")
+```
+Looking at the attributes of `flights` we notice that *index* has been added:
+```{r}
+names(attributes(flights))
+```
+Note that `flights` has not been reordered in increasing order, as would have been the case with `setkey()`:
+```{r}
+flights[1:6]
+```
+## Remove secondary indices
+```{r}
+setindex(flights, NULL)
+```
+
+## Show the secondary indices that have been set
+```{r}
+indices(flights)
+```
+## Set multiple secondary indices
+```{r}
+setindex(flights, origin)
+setindex(flights, origin, dest)
+indices(flights)
+```
+<div class="note">Note: that we did not lose the first index `origin` after setting a multiple index `origin, dest`.</div>
+
+## Why do we need secondary indices
+<blockquote>Reordering a data.table can be expensive and not always ideal</blockquote>
+
+As an example subset `flights` on *origin* for the value "JFK":
+```{r}
+setkey(flights, origin)
+ans <- flights[.("JFK")]
+ans[1:6]
+```
+<div class="note">Note: An order vector had to be computed and the entire data.table had to be reordered based on *origin*. Also if we had a second variable to key then we would have to repeat setting the key and the reordering process. Having multiple secondary indexes can eliminate the time to recompute the order vector if an index already exists.  </div>
+
+## Fast subsetting using `on` argument and secondary indices
+Clear `flights` of keys and secondary indexes, set the index to *origin* and use `on`:
+```{r}
+setkey(flights, NULL)
+setindex(flights, NULL)
+setindex(flights, origin)
+flights["JFK", on = "origin", verbose = T][1:6]
+```
+Note that 'on' reuses the index set by `setkey()` instead of recomputing one. Had the index not existed `on` would create one on the fly.
+
+## Subset `on` multiple columns
+Index on *origin* and *dest*:
+```{r}
+setindex(flights, NULL)
+flights[.("JFK", "LAX"), on = c("origin", "dest")][1:6]
+```
+<div class="note">Note: Time for computing the index is small, so we did not use `setindex()` except to clear indexes.  If the we were to repeat additional subsets on these columns then using `setindex()` might be beneficial. </div>
+
+
+## Subset with `on` with selecting columns in `j`
+Return *carrier* and *arr_delay* columns as a data.table corresponding to *origin* = "LGA" and *dest* = "TPA":
+```{r}
+flights[.("LGA", "TPA"), .(carrier, arr_delay), on = c("origin", "dest")][1:6]
+```
+
+## Subset with `on` and chaining
+```{r}
+flights[.("LGA", "TPA"), .(carrier, arr_delay), on = c("origin", "dest")][order(-arr_delay)][1:6]
+```
+## Subset with `on` and compute in `j`
+Find the maximum arrival delay cooresponding to *origin* = "LGA" and *dest* = "TPA":
+```{r}
+flights[.("LGA", "TPA"), max(arr_delay), on = c("origin", "dest")]
+```
+
+## Subset with `on` and sub-assign using `:=` in `j`
+The *hour* variable has 24 among its values. Set it to 0:
+```{r}
+flights[.(24L), hour := 0, on = "hour"]
+flights[, sort(unique(hour))]
+```
+<blockquote>This is particularly a huge advantage of secondary indices. Previously, just to update a few rows of hour, we had to setkey() on it, which inevitably reorders the entire data.table. With on, the order is preserved, and the operation is much faster! Looking at the code, the task we wanted to perform is also quite clear.</blockquote>
+
+## Subset with `on` and aggregate using `by`
+Get the maximum departure delay for each *month* corresponding to *origin* = "JFK". Order the result by *month*:
+```{r}
+flights[.("JFK"), .(max_delay = max(dep_delay)), keyby = month, on = "origin"][1:6]
+```
+## Subset with `on` and use `mult` argument
+Subset only the first matching row where *dest* matches "BOS" and "DAY":
+```{r}
+flights[c("BOS", "DAY"), on = "dest", mult = "first"]
+```
+# Auto indexing
+
+## Create a large test data.table
+```{r}
+set.seed(1L)
+dt <- data.table(x = sample(1e5L, 1e7L, T), y = runif(100L))
+print(object.size(dt), units = "Mb")
+```
+
+## Time successive vector based subset operation
+
+When we use `==` or `%ini%` on a single column for the first time, a secondary index is created automatically and used to perform the subset.
+The attributes of `dt`:
+```{r}
+names(attributes(dt))
+```
+Time a vector based subset:
+```{r}
+tictoc::tic("First go of vector subset")
+ans <- dt[x == 989L]
+tictoc::toc()
+```
+What we found:
+```{r}
+ans[1:6]
+```
+Look at the attributes for `dt`:
+```{r}
+names(attributes(dt))
+```
+We have a secondary "index". Time a second run of the subset:
+```{r}
+tictoc::tic("Second go of vector subset")
+ans <- dt[x == 989L]
+tictoc::toc()
+```
+Increase in speed: `r 0.66/0.03`

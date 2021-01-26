@@ -1,0 +1,304 @@
+---
+title: "Keys and Fast Binary Search Based Subsets"
+output: 
+   html_document:
+    toc: yes
+    toc_depth: 3
+    css: ../style.css
+params:
+  date: !r Sys.Date()    
+---
+
+```{r, warning=FALSE, message=FALSE}
+library(knitr)
+library(tictoc)
+library(data.table)
+```
+
+```{r,setup, include=FALSE, eval=TRUE}
+options(knitr.table.format = "html", width = 140)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width = 12, fig.height = 8)
+```
+
+<div>Author: Rick Dean</div>
+<div>Article date: `r params$date`</div>
+
+<div class="abstract">
+  <p class="abstract">Abstract</p>
+  The following contains notes/R scripts on learning data.table from the R package vignette [Keys and fast binary search based subsets](https://cloud.r-project.org/web/packages/data.table/vignettes/datatable-keys-fast-subset.html). 
+</div>  
+
+# Data
+## Read in the NYC-flights14 data
+
+<div class="note">Note: As referenced in the vignette, we have downloaded the [flight data](https://raw.githubusercontent.com/Rdatatable/data.table/master/vignettes/flights14.csv) csv file.</div>
+```{r}
+nyc_flights14_file <- file.path("E:/airline_data/flights14.csv")
+if(!base::file.exists(nyc_flights14_file)){
+  stop("Source airline file does not exist.")
+}
+flights <- data.table::fread(nyc_flights14_file)
+str(flights)
+```
+
+# Keys
+## What is a `key`?
+All data.frames have a row names attribute. Consider the data.frame `DF` below:
+```{r}
+set.seed(1L)
+DF = data.frame(ID1 = sample(letters[1:2], 10, TRUE),
+                ID2 = sample(1:3, 10, TRUE),
+                val = sample(10),
+                stringsAsFactors = FALSE,
+                row.names = sample(LETTERS[1:10]))
+DF
+```
+Show the row names of `DF`:
+```{r}
+rownames(DF)
+```
+Subset `DF` by referencing a row:
+```{r}
+DF["C",]
+```
+Limitations of row names:
+
+1. Each row is limited to **exactly** one row name.
+2. Row names should be unique.
+
+Now convert `DF` to a data.table:
+```{r}
+DT <- as.data.table(DF)
+DT
+```
+Show the row names of data.table `DT`:
+```{r}
+rownames(DT)
+```
+Note the following:
+
+1. The row names have been reset from letters to numeric characters.
+2. data.tables never uses row names.
+3. To preserve the original row names use `keep.rownames = TRUE` in `as.data.table()`. This creates a new column called *rn* with the original row names.
+
+<blockquote>
+Keys and their properties
+
+1. We can set keys on multiple columns and the column can be of different types – integer, numeric, character, factor, integer64 etc. list and complex types are not supported yet.
+
+2. Uniqueness is not enforced, i.e., duplicate key values are allowed. Since rows are sorted by key, any duplicates in the key columns will appear consecutively.
+
+3. Setting a key does two things:
+
+  a. physically reorders the rows of the data.table by the column(s) provided by reference, always in increasing order.
+
+  b. marks those columns as key columns by setting an attribute called **sorted** to the data.table.
+
+Since the rows are reordered, a data.table can have at most one key because it can not be sorted in more than one way.
+</blockquote>
+
+## Set keys on a data.table
+How can we set the column *origin* as key in the data.table `flights`?
+```{r}
+data.table::setkey(flights, origin)
+flights[1:3]
+```
+<div class="note">Note: The data.table is now reordered via the *origin* column. Also when creating data.tables with `data.table()` you can set the *key* argument which takes a character vector of column names.</div>
+
+## Use keys on a data.table
+Use the key column *origin* to subset all rows where the origin airport is "JFK":
+```{r}
+ans <- flights[.("JFK")]
+str(ans)
+```
+Use the key column *origin* to subset all rows where the origin airport is "JFK" or "LGA":
+```{r}
+ans <- flights[.(c("JFK", "LGA"))]
+str(ans)
+```
+Check the result values for *origin*:
+```{r}
+ans[, sort(unique(origin))]
+```
+## Get the names of the columns keyed
+```{r}
+data.table::key(ans)
+```
+## Keys and multiple columns
+<blockquote>To refresh, keys are like supercharged row names. We can set key on multiple columns and they can be of multiple types.</blockquote>
+
+How can I set keys on both *origin* and *dest* columns?
+```{r}
+setkey(flights, origin, dest)
+key(flights)
+```
+Set keys by a character vector:
+```{r}
+setkeyv(flights, c("origin", "dest"))
+```
+
+Subset all rows where the *origin* key is "JFK" and the *dest* key is "MIA":
+```{r}
+ans <- flights[.("JFK", "MIA")]
+str(ans)
+```
+Check result *origin* values:
+```{r}
+ans[, sort(unique(origin))]
+```
+Check result *dest* values:
+```{r}
+ans[, sort(unique(dest))]
+```
+Subset all rows where just the first key column *origin* matches "JFK":
+```{r}
+ans <- flights[.("JFK")]
+str(ans)
+```
+Check the result values for *Origin*:
+```{r}
+ans[, sort(unique(origin))]
+```
+
+Subset all rows where just the second key column *dest* matches "MIA":
+```{r}
+ans <- flights[.(unique(origin), "MIA")]
+str(ans)
+```
+
+Check the values for *dest*:
+```{r}
+ans[, sort(unique(dest))]
+```
+<div class="note">Note: "MIA" is automatically recycled to fit the unique values of *origin*.</div>
+
+## Subset with keys and select columns with `j` 
+Select columns *origin*, *dest*, and *arr_delay* with `j` and subset with keys *origin* = "LGA" and *dest* = "TPA":
+Check the keys:
+```{r}
+key(flights)
+```
+```{r}
+ans <- flights[.("LGA", "TPA"), .(arr_delay, origin, dest)]
+str(ans)
+```
+
+## Chaining keys with `j`
+Use chaining in the above *origin* = "LGA" and *dest* = "TPA" subsetting with ordering by *arr_delay*:
+```{r}
+ans <- flights[.("LGA", "TPA"), .(arr_delay, origin, dest)][order(-arr_delay)]
+str(ans)
+```
+
+## Subset with keys and perform a computation in `j`
+```{r}
+ans <- flights[.("LGA", "TPA"), max(arr_delay)]
+ans
+```
+Note that this value agrees with the first value for *arr_delay* in the previous chunk code above.
+
+## Subset with keys and update column values with `:=` in `j`
+Get the unique values for *hour*:
+```{r}
+flights[, sort(unique(hour))]
+```
+Replace all values of 24 with 0 using *hour* as a key.
+Set the key:
+```{r}
+setkey(flights, hour)
+key(flights)
+```
+Subset with the key values equal to 24 and set their value to 0 in `j`:
+```{r}
+flights[.(24), hour := 0L]
+```
+Check the values for *hour*:
+```{r}
+flights[, sort(unique(hour))]
+```
+Check the key of `flights`:
+```{r}
+key(flights)
+```
+<div class="note">Note: With the change in *hour* it is no longer sorted and the data.table's key is set to NULL automatically.</div>
+
+## Subset with keys and using `by`
+Set the key to *origin* and *dest*:
+```{r}
+setkey(flights, origin, dest)
+key(flights)
+```
+Get the maximum departure delay for each *month* cooresponding to *origin* = "JFK". Order the results by *month*.
+```{r}
+ans <- flights["JFK", .(max_dep_delay = max(dep_delay)), keyby = month]
+ans[1:6]
+```
+Check the key for the result:
+```{r}
+key(ans)
+```
+<div class="note">Note: `keyby` automatically reset the key to *month*</div>
+
+## Subset with keys and use `mult`
+With `mult` values we can select "first", "last", or "all" within a key subset.
+Subset only the first matching row from all rows where *origin* matches "JFK" and *dest* matches "MIA":
+```{r}
+setkey(flights, origin, dest)
+ans <- flights[.("JFK", "MIA"), mult = "first"]
+ans
+```
+
+Subset only the last matching row of all the rows where *origin* matches "LGA", "JFK", "EWR" and *dest* matches "XNA":
+
+```{r}
+ans <- flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last"]
+ans
+```
+## Subset with keys and use `nomatch`
+We can choose if queries that do not match should return NA or be skipped altogether.
+From the previous example:
+```{r}
+ans <- flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last", nomatch = NULL]
+ans
+```
+
+# Binary search vs vector scans
+Create a sample data.table with 20 million rows and three columns and key it by columns *x* and *y*:
+```{r}
+set.seed(2L)
+N = 2e7L
+DT <- data.table(x = sample(letters, N, T),
+                 y = sample(1000L, N, T),
+                 val = runif(N))
+print(object.size(DT), units = "Mb")
+```
+Time the vector scan approach:
+```{r}
+tictoc::tic("vector scan")
+ans1 <- DT[x == "g" & y == 877L]
+tictoc::toc()
+```
+The vector scan result:
+```{r}
+str(ans1)
+```
+
+
+
+Time the binary search approach:
+```{r}
+setkeyv(DT, c("x","y"))
+key(DT)
+tictoc::tic("binary search")
+ans2 <- DT[.("g", 877L)]
+tictoc::toc()
+```
+The binary search result:
+```{r}
+str(ans2)
+```
+Are the *val* results identical?
+```{r}
+identical(ans1$val, ans2$val)
+```
+The speed up is ~ `r 0.5/0.01` times

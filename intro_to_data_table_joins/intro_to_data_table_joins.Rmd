@@ -1,0 +1,86 @@
+---
+title: "Introduction to data.table Joins"
+output: 
+   html_document:
+    toc: yes
+    toc_depth: 3
+    css: ../style.css
+params:
+  date: !r Sys.Date()    
+---
+
+```{r, warning=FALSE, message=FALSE}
+library(knitr)
+library(kableExtra)
+library(data.table)
+```
+
+```{r,setup, include=FALSE, eval=TRUE}
+options(knitr.table.format = "html", width = 140)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width = 12, fig.height = 8)
+```
+
+<div>Author: Rick Dean</div>
+<div>Article date: `r params$date`</div>
+
+<div class="abstract">
+  <p class="abstract">Abstract</p>
+The following contains notes/R scripts on learning data.table join inspired from the article [R – Introduction to Data.Table Joins](https://www.gormanalysis.com/blog/r-introduction-to-data-table-joins/) by Ben Gorman.
+</div>  
+
+# Data
+Policy data.table:
+```{r}
+policies_dt <- data.table(
+  PolicyNumber = c(1, 2, 3),
+  EffectiveDate = as.Date(c("2012-1-1", "2012-1-1", "2012-7-1")),
+  ExpirationDate = as.Date(c("2012-12-31", "2012-6-30", "2012-12-31"))
+)
+policies_dt
+```
+Claims data.table:
+```{r}
+claims_dt <- data.table(
+  ClaimNumber = c(123, 124, 125, 126),
+  PolicyNumber = c(1, 1, 3, 4),
+  ClaimCost = c(100, 2400, 350, 8000)
+)
+claims_dt
+```
+
+<blockquote>If you want to see the policy data for each claim, you need to do a join on the policy number. That is, you want the result to include every row from the claims table, and only rows from the policy table that are associated with a claim in the claims table. Outer joins are the default behavior of data.table’s join method.</blockquote>
+
+# Joins
+## Set the keys
+Set the key of each table based on the column we want to use to match the rows of the tables:
+```{r}
+data.table::setkey(policies_dt, "PolicyNumber")
+data.table::setkey(claims_dt, "PolicyNumber")
+```
+<div class="note">Note: The join runs quicker when you key both tables.</div>
+
+## Outer join
+Do the join:
+```{r}
+outer_join_dt <- policies_dt[claims_dt]
+outer_join_dt
+```
+<div class="note">Note: *PolicyNumber* = 2 does not have a claim, so it does not appear in this data.table. Also there is no *PolicyNumber*  = 4 from `claims_dt`in `policies_dt` so there are NA's for *EffectiveDate* and *ExpirationDate*</div>
+
+<blockquote>The important thing to remember when doing a basic X[Y] join using data.table is that the table inside of the brackets will have all of its rows in the resultant table.</blockquote>
+
+## Outer join with negate sign
+Perform an outer join where we want to show rows in the outer table, but not in the inner table:
+```{r}
+outer_join_dt <- policies_dt[!claims_dt]
+outer_join_dt
+```
+
+## Inner join
+If you want to see rows where only both have matches on the key, then set `nomatch = 0`:
+```{r}
+outer_join_dt <- policies_dt[claims_dt, nomatch = 0]
+outer_join_dt
+```
+
+

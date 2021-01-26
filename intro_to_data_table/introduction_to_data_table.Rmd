@@ -1,0 +1,373 @@
+---
+title: "Introduction to data.table"
+output: 
+   html_document:
+    toc: yes
+    toc_depth: 3
+    css: ../style.css
+params:
+  date: !r Sys.Date()    
+---
+
+```{r, warning=FALSE, message=FALSE}
+library(knitr)
+library(data.table)
+```
+
+```{r,setup, include=FALSE, eval=TRUE}
+options(knitr.table.format = "html", width = 140)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width = 12, fig.height = 8)
+```
+
+<div>Author: Rick Dean</div>
+<div>Article date: `r params$date`</div>
+
+<div class="abstract">
+  <p class="abstract">Abstract</p>
+The following contains notes/R scripts on learning data.table from the R package vignette [Introduction to data.table](https://cloud.r-project.org/web/packages/data.table/vignettes/datatable-intro.html) 
+</div>  
+
+# Data
+## Read in the NYC-flights14 data
+
+<div class="note">Note: As referenced in the vignette, we have downloaded the [flight data](https://raw.githubusercontent.com/Rdatatable/data.table/master/vignettes/flights14.csv) csv file.</div>
+```{r}
+nyc_flights14_file <- file.path("F:/airline_data/flights14.csv")
+if(!base::file.exists(nyc_flights14_file)){
+  stop("Source airline file does not exist.")
+}
+flights <- data.table::fread(nyc_flights14_file)
+str(flights)
+```
+
+# Basics
+
+## Create a data.table from scratch
+```{r}
+DT = data.table(
+  ID = c("b","b","b","a","a","c"),
+  a = 1:6,
+  b = 7:12,
+  c = 13:18
+)
+DT
+class(DT)
+```
+
+<div class="note">Note: data.table syntas:</div>
+DT[i, j, by]  Take DT, subset/reorder rows using i, update/perform expressions/select columns using j, group with `by =`.
+
+## Get a subset of rows in `i`
+```{r}
+ans <- flights[origin == "JFK" & month == 6L]
+ans[1:6]
+```
+## Get the first two rows
+```{r}
+flights[1:2]
+```
+
+## Using a logical vector/column to select rows
+```{r}
+DT = data.table(
+  ID = c("b","b","b","a","a","c"),
+  a = 1:6,
+  b = 7:12,
+  c = 13:18
+)
+DT
+```
+Define a logical vector to select rows from the data.table *DT*:
+```{r}
+take = c(F, T, F, T, F, T)
+```
+Use the logical vector to subset *DT*:
+```{r}
+DT_sub <- DT[take]
+DT_sub
+```
+Define a data.table with a logical column:
+```{r}
+DT = data.table(
+  ID = c("b","b","b","a","a","c"),
+  a = 1:6,
+  b = 7:12,
+  c = 13:18,
+  take = c(F, T, F, T, F, T)
+)
+DT
+```
+Use the logical column to select rows with a negate sign:
+```{r}
+DT[!take]
+```
+
+## Sort *origin* in ascending order, then *dest* in descending order
+```{r}
+ans <- flights[order(origin, -dest)]
+ans[1:6]
+```
+
+## Select column(s) in `j` and return it as a vector
+```{r}
+ans <- flights[, arr_delay]
+ans[1:6]
+```
+The class of the result is an integer vector:
+```{r}
+class(ans)
+```
+
+## Select a column in `j` and return a data.table
+```{r}
+ans <- flights[,.(arr_delay)]
+ans[1:6]
+```
+The class of the result is a `data.table`:
+```{r}
+class(ans)
+```
+
+## Select multiple columns in `j` and return a data.table
+```{r}
+ans <- flights[,.(arr_delay, dep_delay)]
+ans[1:6]
+```
+## Select columns and rename them in `j`
+```{r}
+ans <- flights[, .(delay_arr = arr_delay, delay_dep = dep_delay)]
+ans[1:6]
+```
+## Compute an expression in `j`
+How many trips have had total delay < 0?
+```{r}
+ans <- flights[, sum((arr_delay + dep_delay) < 0)]
+ans
+```
+<div class="note">Note: Columns are variables and we should be able to **compute** by calling functions on those variables.</div>
+
+
+## Compute an exprssion in `j` with `lapply()` (EX 1)
+```{r}
+dt <- data.table(x = 1:2, y = 2:3)
+
+sum_fun <- function(xx = NULL){
+  if(3 %in% xx){
+    return(xx + 2)
+  }else {
+    return(xx + 4)
+  }
+}
+
+mod_cols <- c("x","y")
+dt[, (mod_cols) := lapply(dt,sum_fun)]
+dt
+```
+
+## Compute an exprssion in `j` with `lapply()` (EX 2)
+```{r}
+dt <- data.table(x = c(1,1), y = 2:3)
+
+length_fun <- function(xx = NULL){
+  if(length(unique(xx)) != 1){
+    return(xx)
+  }else{
+    return(NULL)
+  }
+}
+
+mod_cols <- c("x","y") 
+dt[, (mod_cols) := lapply(dt, length_fun)]
+dt
+```
+
+
+## Subset in `i` and expressions in `j`
+Calculate the average arrival and departure delay for all the flights with "JFK" as the *origin* airport in the month of June.
+```{r}
+ans <- flights[origin == "JFK" & month == 6L, .(m_arr = mean(arr_delay), m_delay = mean(dep_delay))]
+ans
+```
+
+## Finding the number of rows using `.N`
+How many trips have been made in 2014 from "JFK" airport in the month of June.
+Using the length of a column:
+```{r}
+ans <- flights[origin == "JFK" & month == 6, length(dest)]
+ans
+```
+Using the special `.N` symbol:
+```{r}
+ans <- flights[origin == "JFK" & month == 6L, .N]
+ans
+```
+<div class="note">Note: 
+
+1. In the above example `.N` returns an integer vector.  If it were `.(.N)` a data.table would be returned.
+
+2. `.N` returns the number of rows in the subset. If `by =` is present then the symbol returns the number of observations *in the current group*. 
+
+3. We could have used `nrow(flights[origin == "JFK" & month == 6L])` but it would have to subset the entire data.table first corresponding to the row indices in `i` and then return the rows using `nrow()`, which is unnecessary and inefficient. </div>
+
+## Selecting columns using explicit column string names
+```{r}
+ans <- flights[,c("arr_delay", "dep_delay")]
+head(ans)
+```
+## Using column names stored in a variable with the `..` prefix
+```{r}
+select_cols <- c("arr_delay", "dep_delay")
+ans <- flights[,..select_cols]
+ans[1:6]
+```
+## Deselect columns using column names
+```{r}
+ans <- flights[, !c("arr_delay", "dep_delay")]
+ans[1:6]
+```
+<div class="note">Note: You can also use `-`.</div>
+## Select columns by using a range of column names
+```{r}
+ans <- flights[, day:year]
+ans[1:6]
+```
+
+# Aggregations
+Using `i` and `j` together with `by` to perform operations `by group`.
+
+## Grouping using `by`
+How can we get the number of trips corresponding to each origin airport?
+```{r}
+ans <- flights[, .(.N), by = .(origin)]
+ans
+```
+<div class="note">Note: As mentioned above `.N` gives the number of observations *in the current group* and an automatic column name of "N" is assigned.</div>
+
+`by` can also recognizes the column name string:
+```{r}
+ans <- flights[, .(.N), by = "origin"]
+ans
+```
+How can we calculate the number of trips for each *origin* airport for carrier code "AA"?
+```{r}
+ans <- flights[carrier == "AA", .(.N), by = "origin"]
+ans
+```
+## Grouping with reference to a variable name
+### Using `get()`
+```{r}
+col <- c("origin")
+ans <- flights[, .(.N), by = get(col)]
+ans
+```
+
+### Using `mget()`
+```{r}
+cols <- c("origin","dest")
+ans <- flights[, .(.N), by = mget(cols)]
+ans
+```
+
+## Grouping by a pair of columns
+How can we get the total number of trips for each *origin* and *dest* combination for carrier code "AA"?
+```{r}
+ans <- flights[carrier == "AA", .(.N), by = .(origin, dest)]
+ans[1:6]
+```
+## Grouping and performing a statistic
+How can we get the average arrival and departure delay for each *origin* and *dest* combination for each month for carrier code "AA"?
+```{r}
+ans <- flights[carrier == "AA", .(carrier, .N, avg_arr_delay = mean(arr_delay), avg_dep_delay = mean(dep_delay)), by = .(origin, dest, month)]
+ans[1:6]
+```
+<div class="note">Note: The order of the observations in each group is preserved in the output.</div>
+
+## Using `by:keyby` to sort the within the grouping
+If you want to order the observations in each group in ascending order then use `keyby = .()`.
+```{r}
+ans <- flights[carrier == "AA", .(avg_arr_delay = mean(arr_delay), avg_dep_delay = mean(dep_delay)), keyby =.(origin, dest, month)]
+ans[1:6]
+```
+## Chaining
+How can we get the number of by *origin* and *dest* and then order these totals?  Answer--use chaining.
+```{r}
+ans <- flights[carrier == "AA", .(.N), by = .(origin, dest)][order(origin, -dest)]
+ans[1:6]
+```
+An alternative chaining method using `magrittr::` pipes:
+```{r}
+library(magrittr)
+ans <- flights %>% 
+  .[carrier == "AA"] %>% 
+  .[, .(.N), by = .(origin, dest)] %>% 
+  .[order(origin, -dest)]
+ans[1:6]
+```
+## Expressions in `by`
+Can `by` accept expressions as well or does it just take columns?
+How many flights started late but arrived early (or on time), started and arrived late etc...?
+```{r}
+ans <- flights[, .(.N), by = .(dep_delay > 0, arr_delay > 0)]
+ans
+```
+## Using the special symbol `.SD` for computations within each group
+`.SD` stands for **S**ubset of **D**ata.  It by itself is a `data.table` that holds the data for *the current group* defined using `by`.
+### Taking the above `data.table` *DT*, group by "ID" and print each subgroup.
+1. Show DT:
+```{r}
+DT
+```
+2. Print the subgroups:
+```{r}
+DT[, print(.SD), by = ID]
+```
+
+<div class="note">Note: `.SD` contains all the columns except the grouping columns by default and all the rows for each individual group.</div>
+
+### Using the base lapply to compute the means within each group:
+```{r}
+DT[, lapply(.SD, mean), by = ID]
+```
+If we group flights by *origin*, *dest*, *month* for *carrier* = "AA", find the group means for just *dep_delay* and *arr_delay*.
+```{r}
+ans <- flights[carrier == "AA",
+               lapply(.SD, mean),
+               by = .(origin, dest, month),
+               .SDcols = c("dep_delay", "arr_delay")]
+ans[1:6]
+```
+### Using `.SD` return the first two rows for each *month*.
+```{r}
+ans <- flights[, .SD[1:2], by = month]
+ans[1:8]
+```
+### Using `.SD` return the first row for each *month*.
+```{r}
+ans <- flights[, .SD[1L], by = month]
+ans[1:8]
+```
+### Using `.SD` return the last row for each *month*.
+```{r}
+ans <- flights[, .SD[.N], by = month]
+ans[1:8]
+```
+
+### Using .SD return a random row of each *month*.
+```{r}
+ans <- flights[, .SD[sample(.N, 1L)], by = month]
+ans[1:8]
+```
+<div class="note">Note: in `sample(.N, 1L)` sampling takes place from 1:.N; 1L for the number of items to choose. </div>
+
+### Using .SD to select the desired row **dynamically**
+Get the maximum *dep_delay* from each carrier:
+```{r}
+ans <- flights[, .SD[which.max(dep_delay)], by = carrier]
+ans[1:8]
+```
+### Use .SD to sort each carrier group by descending *dep_delay* and take the top 3
+```{r}
+ans <- flights[, setorder(.SD, -dep_delay)[1:3], by = carrier]
+ans[1:12]
+```
+

@@ -1,0 +1,311 @@
+---
+title: "Cheat Sheet for data.table"
+output: 
+   html_document:
+    toc: yes
+    toc_depth: 3
+    css: ../style.css
+params:
+  date: !r Sys.Date()    
+---
+
+```{r, warning=FALSE, message=FALSE}
+library(knitr)
+library(data.table)
+```
+
+```{r,setup, include=FALSE, eval=TRUE}
+options(knitr.table.format = "html", width = 140)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width = 12, fig.height = 8)
+```
+
+<div>Author: Rick Dean</div>
+<div>Article date: `r params$date`</div>
+
+<div class="abstract">
+  <p class="abstract">Abstract</p>
+  The following contains notes/R scripts on learning data.table from a this [cheat sheet](https://s3.amazonaws.com/assets.datacamp.com/img/blog/data+table+cheat+sheet.pdf). Described as the official cheat sheet for the DataCamp course.
+</div>  
+
+# Data Analysis the Data.Table Way
+
+## Example data.table
+
+### Create the data.table *DT*
+```{r}
+DT <- data.table(
+  V1 = c(1L, 2L),
+  V2 = LETTERS[1:3],
+  V3 = round(rnorm(4), 4),
+  V4 = 1:12
+)
+DT
+```
+<div class="note">Note: the recycling</div>
+
+### Define a function for resetting *DT*
+```{r}
+reset_DT = function(){
+  DT <- data.table(
+    V1 = c(1L, 2L),
+    V2 = LETTERS[1:3],
+    V3 = round(rnorm(4), 4),
+    V4 = 1:12
+  )
+  return(DT)
+}
+```
+
+
+
+## Subsetting rows using `i`
+### By numbers
+```{r}
+DT[3:5,] # or DT[3:5]
+```
+### By column name
+```{r}
+DT[V2 == "A"] # selects all rows that have value "A"
+```
+### By multiple column name
+```{r}
+DT[V2 %in% c("A", "C")] # all rows that have "A" or "C" in column V2
+```
+## Manipulating on columns in `j`
+### Select one column in `j`
+```{r}
+DT[, V2]
+```
+### Select several columns in `j` use `.()`
+```{r}
+DT[, .(V2, V3)] # returns a data.table
+```
+<div class="note">Note: `.()` is alias to `list()`. If `.()` is used the returned value is a *data.table*. If `.()` is not used the result is a vector.</div>
+### Select columns without using `.()`
+```{r}
+DT[, c(V2,V3)] # returns a vector
+```
+### Call functions in `j`
+```{r}
+DT[, sum(V1)] # returns the sum of all elements in V1 as a vector
+```
+### Computing on several columns
+```{r}
+DT[, .(sum(V1), sd(V3))] # returns sum of V1 and sd of V3 in a data.table
+```
+### Assigning column names to computed columns
+```{r}
+DT[, .(Aggregate = sum(V1), Sd.V3 = sd(V3))]
+```
+### Columns get recycled if different lengths
+```{r}
+DT[, .(V1, Sd.V3 = sd(V3))] # Sd.V3 gets recycled
+```
+### Multiple expressions wrapped in curly braces
+```{r}
+DT[, {print(V2)  # like in-line funciton
+      plot(V3)
+      NULL}]
+```
+## Grouping with `j`
+### Doing grouping with one column
+```{r}
+DT[, .(V4.Sum = sum(V4)), by = V1] # the sum of V4 for every group in V1
+```
+### Doing grouping with a function in `j`
+```{r}
+DT[, .(V4.mean = mean(V4)), by = V2] # the mean of V4 in subgroups of V2
+```
+
+
+### Doing grouping with several columns using `.()`
+```{r}
+DT[, .(V4.Sum = sum(V4)), by = .(V1,V2)]
+```
+### Call functions in `by`
+```{r}
+DT[, .(V4.Sum = sum(V4)), by = sign(V1-1)]
+```
+### Assigning new column names in `by`
+```{r}
+DT[, .(V4.Sum = sum(V4)), by = .(V1.01 = sign(V1-1))]
+```
+### Grouping on only a subset of rows by specifying `i`
+```{r}
+DT[1:5, .(V4.Sum = sum(V4)), by = V1]
+```
+### Using `.N` to get the total number of rows for each group
+```{r}
+DT[, .N, by = V1]
+```
+### Using `.N` in `j` returns the number of rows
+```{r}
+DT[,.N]
+```
+
+
+## Adding/Updating columns by reference in `j` using `:=`
+### Updating one column using `:=`
+```{r}
+DT[, V1 := round(exp(V1), 2)] # V1 is updated
+DT
+```
+### Adding/updating several columns (form 1)
+```{r}
+DT <- reset_DT()
+DT[, c("V1", "V2") := .(round(exp(V1),2), rep(LETTERS[4:6],4))]
+DT
+```
+### Adding/updating several columns (form 2 -- functional form)
+```{r}
+DT <- reset_DT()
+DT[, `:=` (V1 = round(exp(V1),2), V2 = rep(LETTERS[4:6],4))]
+DT
+```
+### Remove a column with `:=`
+```{r}
+DT[, V1 := NULL]
+DT
+```
+### Remove several columns with `:=`
+```{r}
+DT <- reset_DT()
+DT[, c("V1", "V2") := NULL]
+DT
+```
+### Specify columns in a variable object
+```{r}
+DT <- reset_DT()
+Cols.chosen <- c("V1", "V2")
+DT[, (Cols.chosen) := NULL]
+DT
+```
+<div class="note">Note: the use of `( )`</div>
+
+## Indexing and keys
+### Use `setkey()` to set key and sort specified column
+```{r}
+DT <- reset_DT()
+setkey(DT, V2)
+DT
+```
+### Use `key()` to identify the current key
+```{r}
+key(DT)
+```
+
+### Use keys to select rows for 1 value
+```{r}
+DT["A"]
+```
+### Use keys to select rows for several values
+```{r}
+DT[c("A", "C")]
+```
+### Use `mult` argument to control which row is returned
+```{r}
+DT["A", mult = "first"] # returns the first row of all rows that match the value "A" for V2
+```
+<div class="note">Note: there is also a "last" value for `mult`</div>
+
+### Using the `nomatch` argument when selecting rows
+```{r}
+DT[c("A", "D"), nomatch = 0] # returns all rows with "A" or "D". Since no "D", it is not returned because of nomatch
+```
+### Result when `nomatch` is not specifed
+```{r}
+DT[c("A","D")]
+```
+### Multiple values for the key with a function in `j`
+```{r}
+DT[c("A","C"), sum(V4)] # returns the sum of V4 for rows of V2 with values "A", and "C"
+```
+### Using `.EACHI` in `by`
+```{r}
+DT[c("A","C"), sum(V4), by = .EACHI] # returns data.table with separate sums for V4 for rows with "A" or "C" under V2
+```
+### Multiple keys specified
+```{r}
+setkey(DT, V1, V2)
+key(DT)
+```
+Now do row selection with these pair of keys:
+```{r}
+DT[.(2, "C")] # select rows with V1 = 2 and V2 = "C"
+```
+### Multiple keys and multiple values
+```{r}
+DT[.(2, c("A", "C"))]
+```
+## Advanced data table operations
+### Using `.SD`
+`.SD` is a data.table and holds all the values of all columns, except the one specified in `by`.
+
+`.SD` is only accessible in `j`.
+```{r}
+DT[, print(.SD), by = V3] # to show what is in .SD
+```
+### `.SD` as a data.table of a subgroup
+Get the first and last rows of each subgroup
+```{r}
+DT[, .SD[c(1, .N)], by = V2]
+```
+### Map across `.SD` with a function
+```{r}
+DT[, lapply(.SD, sum), by = V2] # sum of the rows of each subgroup of V2 for all of the columns
+```
+
+### Map across specific columns using `.SD` with a function
+```{r}
+DT[, lapply(.SD, sum), by = V2, .SDcols = c("V3", "V4")]
+```
+
+## Chaining statements
+### With no chaining
+1. Create intermediate data.table:
+```{r}
+DT_v4sum <-  DT[, .(V4.Sum = sum(V4)), by = V2]
+DT_v4sum
+```
+2. Filter groups that have sums < 30:
+```{r}
+DT_v4sum <- DT_v4sum[V4.Sum < 30]
+DT_v4sum
+```
+2. Order the result in descending order
+```{r}
+DT_v4sum <- DT_v4sum[,][order(-V4.Sum)]
+DT_v4sum
+```
+
+### With chaining
+```{r}
+DT_v4sum <- DT[, .(V4.Sum = sum(V4)), by = V2][V4.Sum < 30][order(-V4.Sum)]
+DT_v4sum
+```
+## Using the `set()` family
+### `set()` to loop and update rows and columns
+Syntax of `set()`:   for(i in from:to) set(DT, row, column, new value)
+Example:
+```{r}
+rows <- list(3:4, 5:6)
+cols <- 1:2
+for(i in seq_along(rows)){
+  set(DT, i = rows[[i]], j = cols[i], value = NA)
+}
+DT
+```
+### `setnames()` create or update column names
+Syntax of `setnames(): setnames(DT, "old", "new")
+```{r}
+setnames(DT, c("V2", "V3"), c("V2.rating", "V3.datacamp"))
+DT
+```
+### `setcolorder()` to reorder columns
+Syntax of `setcolorder()`: setcolorder(DT, "neworder")
+```{r}
+DT <- reset_DT()
+setcolorder(DT, c("V2","V1","V4","V3"))
+DT
+```
+

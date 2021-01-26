@@ -1,0 +1,96 @@
+---
+title: "A dummies guide to the fabulous data table package"
+output: 
+   html_document:
+    toc: yes
+    toc_depth: 3
+    css: ../style.css
+params:
+  date: !r Sys.Date()      
+---
+
+```{r, warning=FALSE, message=FALSE}
+library(knitr)
+library(data.table)
+library(readxl)
+library(lubridate)
+library(grid)
+library(gtable)
+library(rlang)
+library(ggplot2)
+library(RplotterPkg)
+```
+
+```{r,setup, include=FALSE, eval=TRUE}
+options(knitr.table.format = "html")
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width = 12, fig.height = 8)
+```
+
+<div>Author: Rick Dean</div>
+<div>Article date: `r params$date`</div>
+
+<div class="abstract">
+  <p class="abstract">Abstract</p>
+The following notes/R scripts are inspired on an article by John MacKintosh, [data.table by a dummy](https://johnmackintosh.net/blog/2019-06-30-datatable-by-a-dummy/)
+</div>
+
+# Data
+## Read in the Excel data
+<div class="note">Note: The data was downloaded from the reference in the article.</div>
+```{r}
+excel_file_path <- file.path("E:/excel_data/RedGreenGreyDots.xlsx")
+if(!base::file.exists(excel_file_path)){
+  stop("Excel file RedGreenGreyDots.xlsx does not exist.")
+}
+data_dt <- readxl::read_xlsx(excel_file_path)
+data.table::setDT(data_dt)
+str(data_dt)
+```
+<div class="note">Note: `data.table::setDT()` does an inplace conversion to data.table.</div>
+
+# Transformations of data.table
+## Add new columns with expressions in `j`
+Add a new column *Movement15* that rounds times to nearest 15 minutes:
+```{r}
+data_dt[, Movement15 := lubridate::floor_date(MovementDateTime, "15 minutes")]
+str(data_dt)
+```
+
+
+Add a new column *Counter* that uses the `ifelse` expression:
+```{r}
+data_dt[, Counter := ifelse(IN_OUT %chin% "IN", 1L, -1L)]
+str(data_dt)
+```
+
+## Add a new column in `j` with an expression and grouping using `by`
+Add a new column *SeqNo* using the `cumsum()` expression with grouping:
+```{r}
+data_dt[, SeqNo := cumsum(Counter), by = .(IN_OUT, Movement_Type,Staging_Post,Movement15)]
+str(data_dt)
+```
+
+## Select rows in `i` and redefine a column value
+For *Movement_Type* change all rows that contain "Transfer" to the value "Transfer":
+```{r}
+data_dt[Movement_Type %like% "Transfer", Movement_Type := "Transfer"]
+str(data_dt)
+```
+
+# Plot the data
+Plot the data using `RplotterPkg::multi_scatter_plot()` function:
+```{r, fig.width=12, fig.height=10}
+a_plot_table <- RplotterPkg::multi_scatter_plot(
+  df = data_dt,
+  factor_var = "Staging_Post",
+  factor_x = "Movement15",
+  aes_y = "SeqNo",
+  aes_color = "Movement_Type",
+  x_major_date_breaks = "3 hours",
+  x_date_labels = "%H:%M",
+  col_width = 6,
+  display_plot = FALSE
+)
+grid::grid.newpage()
+grid::grid.draw(a_plot_table)
+```
