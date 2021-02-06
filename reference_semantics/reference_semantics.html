@@ -451,13 +451,11 @@ summary {
 </ul>
 </div>
 
-<pre class="r"><code>library(knitr)
-library(data.table)</code></pre>
 <div>
 Author: Rick Dean
 </div>
 <div>
-Article date: 2020-12-20
+Article date: 2021-01-31
 </div>
 <div class="abstract">
 <p class="abstract">
@@ -465,6 +463,11 @@ Abstract
 </p>
 <p>The following contains notes/R scripts on learning data.table from the R package vignette <a href="https://cloud.r-project.org/web/packages/data.table/vignettes/datatable-reference-semantics.html">Reference semantics</a></p>
 </div>
+<pre class="r"><code>library(knitr)
+library(here)
+library(data.table)
+
+current_dir &lt;- here()</code></pre>
 <div id="data" class="section level1">
 <h1>Data</h1>
 <div id="read-in-the-nyc-flights14-data" class="section level2">
@@ -472,11 +475,11 @@ Abstract
 <div class="note">
 Note: As referenced in the vignette, we have downloaded the <a href="https://raw.githubusercontent.com/Rdatatable/data.table/master/vignettes/flights14.csv">flight data</a> csv file.
 </div>
-<pre class="r"><code>nyc_flights14_file &lt;- file.path(&quot;E:/airline_data/flights14.csv&quot;)
-if(!base::file.exists(nyc_flights14_file)){
+<pre class="r"><code>data_path &lt;- file.path(current_dir, &quot;data/flights14.csv&quot;)
+if(!base::file.exists(data_path)){
   stop(&quot;Source airline file does not exist.&quot;)
 }
-flights &lt;- data.table::fread(nyc_flights14_file)
+flights &lt;- data.table::fread(data_path)
 str(flights)</code></pre>
 <pre><code>## Classes &#39;data.table&#39; and &#39;data.frame&#39;:   253316 obs. of  11 variables:
 ##  $ year     : int  2014 2014 2014 2014 2014 2014 2014 2014 2014 2014 ...

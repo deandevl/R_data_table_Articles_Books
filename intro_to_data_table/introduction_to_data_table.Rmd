@@ -1,22 +1,17 @@
 ---
 title: "Introduction to data.table"
 output: 
-   html_document:
-    toc: yes
-    toc_depth: 3
-    css: ../style.css
+    html_document:
+      toc: yes
+      toc_depth: 3
+      css: ../style.css
 params:
   date: !r Sys.Date()    
 ---
 
-```{r, warning=FALSE, message=FALSE}
-library(knitr)
-library(data.table)
-```
-
 ```{r,setup, include=FALSE, eval=TRUE}
-options(knitr.table.format = "html", width = 140)
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width = 12, fig.height = 8)
+options(knitr.table.format = "pdf", width = 140)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
 
 <div>Author: Rick Dean</div>
@@ -27,16 +22,26 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width =
 The following contains notes/R scripts on learning data.table from the R package vignette [Introduction to data.table](https://cloud.r-project.org/web/packages/data.table/vignettes/datatable-intro.html) 
 </div>  
 
+```{r, warning=FALSE, message=FALSE}
+library(knitr)
+library(data.table)
+library(mosaicData)
+library(here)
+
+current_dir <- here()
+```
+
 # Data
 ## Read in the NYC-flights14 data
 
 <div class="note">Note: As referenced in the vignette, we have downloaded the [flight data](https://raw.githubusercontent.com/Rdatatable/data.table/master/vignettes/flights14.csv) csv file.</div>
+
 ```{r}
-nyc_flights14_file <- file.path("F:/airline_data/flights14.csv")
-if(!base::file.exists(nyc_flights14_file)){
+data_path <- file.path(current_dir, "data/flights14.csv")
+if(!base::file.exists(data_path)){
   stop("Source airline file does not exist.")
 }
-flights <- data.table::fread(nyc_flights14_file)
+flights <- data.table::fread(data_path)
 str(flights)
 ```
 
@@ -369,5 +374,56 @@ ans[1:8]
 ```{r}
 ans <- flights[, setorder(.SD, -dep_delay)[1:3], by = carrier]
 ans[1:12]
+```
+
+# Miscellaneous
+## Recode a column 
+ For column *V2* of dt, I want to recode values A,B,C to T,K,D :
+1. Set up the data.table (note the recycling for *dt*): 
+```{r}
+dt <- data.table(V1=c(0L,1L,2L),
+                 V2=LETTERS[1:3],
+                 V4=1:12)
+str(dt)
+```
+2. Perform the reorder:
+```{r}
+
+dt[, V2 := unlist(lapply(V2, function(x) {fcase(x == "A", "T",
+                                           x == "B", "K",
+                                           x == "C", "D")}))]
+str(dt)
+```
+
+## Creating derived categorical variables
+1. Using the *HELPmiss* dataset from *mosaicData* package. Select *id*, *sex*, *i1*, *i2*, *age*:
+```{r}
+data("HELPmiss", package = "mosaicData")
+HELPnew_dt <- data.table::setDT(HELPmiss)
+HELPnew_dt <- HELPnew_dt[, .(id, sex, i1, i2, age)]
+str(HELPnew_dt)
+```
+The variable *i1* is "average number of drinks per day(in last 30 days)" and *i2* is "maximum number of drinks per day(in the last 30 days)".
+
+We want to create a new factor variable *drink_status* with 3 levels "abstinent", "moderate", "highrisk" based on *sex*, *i1*, and *i2*. 
+
+2. To test the handling of NA's set the value of *i1* to NA for *id* == 1:
+```{r}
+HELPnew_dt[id == 1, i1 := NA]
+head(HELPnew_dt,3)
+```
+3. Create the new variable *drink_status*:
+```{r}
+HELPnew_dt[, drink_status := 
+  fifelse(is.na(i1), "missing",
+  fifelse(i1 == 0, "abstinent",
+  fifelse(i1 <= 1 & i2 <= 3 & sex == "female", "moderate",
+  fifelse(i1 <= 1 & i2 <= 3 & sex == "male" & age >= 65, "moderate",
+  fifelse(i1 <= 2 & i2 <= 4 & sex == "male", "moderate", "highrisk")))))]
+head(HELPnew_dt,3)
+```
+4. Show the counts for *drink_status* values:
+```{r}
+HELPnew_dt[, .N, by = drink_status]
 ```
 

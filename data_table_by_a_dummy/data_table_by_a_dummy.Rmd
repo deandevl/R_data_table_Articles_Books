@@ -9,18 +9,6 @@ params:
   date: !r Sys.Date()      
 ---
 
-```{r, warning=FALSE, message=FALSE}
-library(knitr)
-library(data.table)
-library(readxl)
-library(lubridate)
-library(grid)
-library(gtable)
-library(rlang)
-library(ggplot2)
-library(RplotterPkg)
-```
-
 ```{r,setup, include=FALSE, eval=TRUE}
 options(knitr.table.format = "html")
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width = 12, fig.height = 8)
@@ -34,18 +22,35 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width =
 The following notes/R scripts are inspired on an article by John MacKintosh, [data.table by a dummy](https://johnmackintosh.net/blog/2019-06-30-datatable-by-a-dummy/)
 </div>
 
+```{r, warning=FALSE, message=FALSE}
+library(knitr)
+library(data.table)
+library(here)
+library(readxl)
+library(lubridate)
+library(grid)
+library(gtable)
+library(rlang)
+library(ggplot2)
+library(RplotterPkg)
+
+current_dir <- here()
+```
+
 # Data
 ## Read in the Excel data
 <div class="note">Note: The data was downloaded from the reference in the article.</div>
+
 ```{r}
-excel_file_path <- file.path("E:/excel_data/RedGreenGreyDots.xlsx")
-if(!base::file.exists(excel_file_path)){
+data_file <- file.path(current_dir, "data/RedGreenGreyDots.xlsx")
+if(!base::file.exists(data_file)){
   stop("Excel file RedGreenGreyDots.xlsx does not exist.")
 }
-data_dt <- readxl::read_xlsx(excel_file_path)
+data_dt <- readxl::read_xlsx(data_file)
 data.table::setDT(data_dt)
 str(data_dt)
 ```
+
 <div class="note">Note: `data.table::setDT()` does an inplace conversion to data.table.</div>
 
 # Transformations of data.table

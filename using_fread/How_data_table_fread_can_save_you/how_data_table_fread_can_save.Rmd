@@ -9,14 +9,6 @@ params:
   date: !r Sys.Date()    
 ---
 
-```{r, warning=FALSE, message=FALSE}
-library(knitr)
-library(readr)
-library(data.table)
-library(tictoc)
-library(pryr)
-```
-
 ```{r,setup, include=FALSE, eval=TRUE}
 options(knitr.table.format = "html")
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width = 12, fig.height = 8)
@@ -31,14 +23,25 @@ The following notes/R scripts are inspired on an article by Jozef Hajnala,
 [How data.table’s fread can save you a lot of time and memory, and take input from shell commands"](https://jozef.io/r917-fread-comparisons/)
 </div>  
 
+```{r, warning=FALSE, message=FALSE}
+library(knitr)
+library(readr)
+library(data.table)
+library(here)
+library(tictoc)
+library(pryr)
+
+current_dir <- here()
+```
+
 # Compare Timing `utils::read.csv()`, `readr::read_csv()`, and `data.table::fread()`
 ## Establish data directory
 
 <div class="note">Note: We are using the [Airline on-time performance data](http://stat-computing.org/dataexpo/2009/the-data.html) referenced in the article.</div>
 
-Establish source directory for the source airline data file
+Establish source directory for the source airline data file:
 ```{r}
-source_file <- file.path("E:/airline_data/january_2020.csv")
+source_file <- file.path(current_dir, "data/january_2020.csv")
 if(!base::file.exists(source_file)){
   stop("Source airline file does not exist.")
 }

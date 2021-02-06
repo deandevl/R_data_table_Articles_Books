@@ -443,20 +443,11 @@ summary {
 </ul>
 </div>
 
-<pre class="r"><code>library(knitr)
-library(data.table)
-library(readxl)
-library(lubridate)
-library(grid)
-library(gtable)
-library(rlang)
-library(ggplot2)
-library(RplotterPkg)</code></pre>
 <div>
 Author: Rick Dean
 </div>
 <div>
-Article date: 2020-12-20
+Article date: 2021-01-31
 </div>
 <div class="abstract">
 <p class="abstract">
@@ -464,6 +455,18 @@ Abstract
 </p>
 <p>The following notes/R scripts are inspired on an article by John MacKintosh, <a href="https://johnmackintosh.net/blog/2019-06-30-datatable-by-a-dummy/">data.table by a dummy</a></p>
 </div>
+<pre class="r"><code>library(knitr)
+library(data.table)
+library(here)
+library(readxl)
+library(lubridate)
+library(grid)
+library(gtable)
+library(rlang)
+library(ggplot2)
+library(RplotterPkg)
+
+current_dir &lt;- here()</code></pre>
 <div id="data" class="section level1">
 <h1>Data</h1>
 <div id="read-in-the-excel-data" class="section level2">
@@ -471,11 +474,11 @@ Abstract
 <div class="note">
 Note: The data was downloaded from the reference in the article.
 </div>
-<pre class="r"><code>excel_file_path &lt;- file.path(&quot;E:/excel_data/RedGreenGreyDots.xlsx&quot;)
-if(!base::file.exists(excel_file_path)){
+<pre class="r"><code>data_file &lt;- file.path(current_dir, &quot;data/RedGreenGreyDots.xlsx&quot;)
+if(!base::file.exists(data_file)){
   stop(&quot;Excel file RedGreenGreyDots.xlsx does not exist.&quot;)
 }
-data_dt &lt;- readxl::read_xlsx(excel_file_path)
+data_dt &lt;- readxl::read_xlsx(data_file)
 data.table::setDT(data_dt)
 str(data_dt)</code></pre>
 <pre><code>## Classes &#39;data.table&#39; and &#39;data.frame&#39;:   684 obs. of  7 variables:

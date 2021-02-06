@@ -9,12 +9,6 @@ params:
   date: !r Sys.Date()    
 ---
 
-```{r, warning=FALSE, message=FALSE}
-library(knitr)
-library(kableExtra)
-library(data.table)
-```
-
 ```{r,setup, include=FALSE, eval=TRUE}
 options(knitr.table.format = "html", width = 140)
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width = 12, fig.height = 8)
@@ -27,6 +21,12 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width =
   <p class="abstract">Abstract</p>
 The following contains notes/R scripts on learning data.table join inspired from the article [R – Introduction to Data.Table Joins](https://www.gormanalysis.com/blog/r-introduction-to-data-table-joins/) by Ben Gorman.
 </div>  
+
+```{r, warning=FALSE, message=FALSE}
+library(knitr)
+library(kableExtra)
+library(data.table)
+```
 
 # Data
 Policy data.table:

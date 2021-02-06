@@ -441,16 +441,11 @@ summary {
 </ul>
 </div>
 
-<pre class="r"><code>library(knitr)
-library(readr)
-library(data.table)
-library(tictoc)
-library(pryr)</code></pre>
 <div>
 Author: Rick Dean
 </div>
 <div>
-Article date: 2020-12-20
+Article date: 2021-01-31
 </div>
 <div class="abstract">
 <p class="abstract">
@@ -458,6 +453,14 @@ Abstract
 </p>
 <p>The following notes/R scripts are inspired on an article by Jozef Hajnala, <a href="https://jozef.io/r917-fread-comparisons/">How data.table’s fread can save you a lot of time and memory, and take input from shell commands&quot;</a></p>
 </div>
+<pre class="r"><code>library(knitr)
+library(readr)
+library(data.table)
+library(here)
+library(tictoc)
+library(pryr)
+
+current_dir &lt;- here()</code></pre>
 <div id="compare-timing-utilsread.csv-readrread_csv-and-data.tablefread" class="section level1">
 <h1>Compare Timing <code>utils::read.csv()</code>, <code>readr::read_csv()</code>, and <code>data.table::fread()</code></h1>
 <div id="establish-data-directory" class="section level2">
@@ -465,8 +468,8 @@ Abstract
 <div class="note">
 Note: We are using the <a href="http://stat-computing.org/dataexpo/2009/the-data.html">Airline on-time performance data</a> referenced in the article.
 </div>
-<p>Establish source directory for the source airline data file</p>
-<pre class="r"><code>source_file &lt;- file.path(&quot;E:/airline_data/january_2020.csv&quot;)
+<p>Establish source directory for the source airline data file:</p>
+<pre class="r"><code>source_file &lt;- file.path(current_dir, &quot;data/january_2020.csv&quot;)
 if(!base::file.exists(source_file)){
   stop(&quot;Source airline file does not exist.&quot;)
 }</code></pre>
@@ -477,7 +480,7 @@ if(!base::file.exists(source_file)){
 <pre class="r"><code>tictoc::tic(&quot;utils::read.csv()&quot;)
 base_airline_df &lt;- utils::read.csv(source_file)
 tictoc::toc()</code></pre>
-<pre><code>## utils::read.csv(): 6.55 sec elapsed</code></pre>
+<pre><code>## utils::read.csv(): 4.36 sec elapsed</code></pre>
 </div>
 <div id="using-readrread_csv" class="section level2">
 <h2>Using <code>readr::read_csv()</code></h2>
@@ -485,7 +488,7 @@ tictoc::toc()</code></pre>
 <pre class="r"><code>tictoc::tic(&quot;readr::read_csv()&quot;)
 readr_airline_df &lt;- readr::read_csv(source_file, progress = F)
 tictoc::toc()</code></pre>
-<pre><code>## readr::read_csv(): 2.31 sec elapsed</code></pre>
+<pre><code>## readr::read_csv(): 1.86 sec elapsed</code></pre>
 </div>
 <div id="using-data.tablefread" class="section level2">
 <h2>Using <code>data.table::fread()</code></h2>
@@ -493,7 +496,7 @@ tictoc::toc()</code></pre>
 <pre class="r"><code>tictoc::tic(&quot;data.table::fread()&quot;)
 fread_airline_df &lt;- data.table::fread(source_file)
 tictoc::toc()</code></pre>
-<pre><code>## data.table::fread(): 0.59 sec elapsed</code></pre>
+<pre><code>## data.table::fread(): 0.39 sec elapsed</code></pre>
 </div>
 </div>
 <div id="compare-memory-usage" class="section level1">

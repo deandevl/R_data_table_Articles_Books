@@ -478,16 +478,19 @@ summary {
 <li><a href="#use-.sd-to-sort-each-carrier-group-by-descending-dep_delay-and-take-the-top-3">Use .SD to sort each carrier group by descending <em>dep_delay</em> and take the top 3</a></li>
 </ul></li>
 </ul></li>
+<li><a href="#miscellaneous">Miscellaneous</a>
+<ul>
+<li><a href="#recode-a-column">Recode a column</a></li>
+<li><a href="#creating-derived-categorical-variables">Creating derived categorical variables</a></li>
+</ul></li>
 </ul>
 </div>
 
-<pre class="r"><code>library(knitr)
-library(data.table)</code></pre>
 <div>
 Author: Rick Dean
 </div>
 <div>
-Article date: 2021-01-02
+Article date: 2021-02-02
 </div>
 <div class="abstract">
 <p class="abstract">
@@ -495,6 +498,12 @@ Abstract
 </p>
 <p>The following contains notes/R scripts on learning data.table from the R package vignette <a href="https://cloud.r-project.org/web/packages/data.table/vignettes/datatable-intro.html">Introduction to data.table</a></p>
 </div>
+<pre class="r"><code>library(knitr)
+library(data.table)
+library(mosaicData)
+library(here)
+
+current_dir &lt;- here()</code></pre>
 <div id="data" class="section level1">
 <h1>Data</h1>
 <div id="read-in-the-nyc-flights14-data" class="section level2">
@@ -502,11 +511,11 @@ Abstract
 <div class="note">
 Note: As referenced in the vignette, we have downloaded the <a href="https://raw.githubusercontent.com/Rdatatable/data.table/master/vignettes/flights14.csv">flight data</a> csv file.
 </div>
-<pre class="r"><code>nyc_flights14_file &lt;- file.path(&quot;F:/airline_data/flights14.csv&quot;)
-if(!base::file.exists(nyc_flights14_file)){
+<pre class="r"><code>data_path &lt;- file.path(current_dir, &quot;data/flights14.csv&quot;)
+if(!base::file.exists(data_path)){
   stop(&quot;Source airline file does not exist.&quot;)
 }
-flights &lt;- data.table::fread(nyc_flights14_file)
+flights &lt;- data.table::fread(data_path)
 str(flights)</code></pre>
 <pre><code>## Classes &#39;data.table&#39; and &#39;data.frame&#39;:   253316 obs. of  11 variables:
 ##  $ year     : int  2014 2014 2014 2014 2014 2014 2014 2014 2014 2014 ...
@@ -1040,14 +1049,14 @@ ans[1:8]</code></pre>
 <pre class="r"><code>ans &lt;- flights[, .SD[sample(.N, 1L)], by = month]
 ans[1:8]</code></pre>
 <pre><code>##    month year day dep_delay arr_delay carrier origin dest air_time distance hour
-## 1:     1 2014   1        -4        21      B6    EWR  PBI      169     1023   11
-## 2:     2 2014   2       -10        -4      AA    EWR  DFW      231     1372    9
-## 3:     3 2014   4        -8        -7      AA    LGA  MIA      166     1096   14
-## 4:     4 2014   4       -15       -29      B6    LGA  FLL      141     1076   10
-## 5:     5 2014  20        -5       -39      B6    JFK  CLT       75      541   16
-## 6:     6 2014   7       -12       -14      B6    LGA  FLL      153     1076   10
-## 7:     7 2014  10        -4        62      B6    JFK  PBI      165     1028   10
-## 8:     8 2014  26        -6       -20      US    LGA  BOS       32      184   14</code></pre>
+## 1:     1 2014  16        50        36      UA    EWR  FLL      157     1065   19
+## 2:     2 2014  18        -1        -9      B6    JFK  PWM       44      273   13
+## 3:     3 2014   4       -10        -9      US    LGA  BOS       41      184   19
+## 4:     4 2014  17         1       -14      AA    JFK  DFW      200     1391   15
+## 5:     5 2014  13        -4       -25      DL    LGA  MCO      126      950   11
+## 6:     6 2014  11        68       105      AA    EWR  DFW      193     1372   15
+## 7:     7 2014  12        -4        -5      MQ    JFK  CVG       95      589   15
+## 8:     8 2014  14        -7       -13      US    LGA  DCA       46      214    7</code></pre>
 <div class="note">
 Note: in <code>sample(.N, 1L)</code> sampling takes place from 1:.N; 1L for the number of items to choose.
 </div>
@@ -1085,6 +1094,90 @@ ans[1:12]</code></pre>
 ## 11:      DL 2014     2  21      1014      1007    JFK  MCO      139      944    8
 ## 12:      DL 2014     2  15      1003       994    JFK  DEN      242     1626   12</code></pre>
 </div>
+</div>
+</div>
+<div id="miscellaneous" class="section level1">
+<h1>Miscellaneous</h1>
+<div id="recode-a-column" class="section level2">
+<h2>Recode a column</h2>
+<p>For column <em>V2</em> of dt, I want to recode values A,B,C to T,K,D : 1. Set up the data.table (note the recycling for <em>dt</em>):</p>
+<pre class="r"><code>dt &lt;- data.table(V1=c(0L,1L,2L),
+                 V2=LETTERS[1:3],
+                 V4=1:12)
+str(dt)</code></pre>
+<pre><code>## Classes &#39;data.table&#39; and &#39;data.frame&#39;:   12 obs. of  3 variables:
+##  $ V1: int  0 1 2 0 1 2 0 1 2 0 ...
+##  $ V2: chr  &quot;A&quot; &quot;B&quot; &quot;C&quot; &quot;A&quot; ...
+##  $ V4: int  1 2 3 4 5 6 7 8 9 10 ...
+##  - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt;</code></pre>
+<ol start="2" style="list-style-type: decimal">
+<li>Perform the reorder:</li>
+</ol>
+<pre class="r"><code>dt[, V2 := unlist(lapply(V2, function(x) {fcase(x == &quot;A&quot;, &quot;T&quot;,
+                                           x == &quot;B&quot;, &quot;K&quot;,
+                                           x == &quot;C&quot;, &quot;D&quot;)}))]
+str(dt)</code></pre>
+<pre><code>## Classes &#39;data.table&#39; and &#39;data.frame&#39;:   12 obs. of  3 variables:
+##  $ V1: int  0 1 2 0 1 2 0 1 2 0 ...
+##  $ V2: chr  &quot;T&quot; &quot;K&quot; &quot;D&quot; &quot;T&quot; ...
+##  $ V4: int  1 2 3 4 5 6 7 8 9 10 ...
+##  - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt;</code></pre>
+</div>
+<div id="creating-derived-categorical-variables" class="section level2">
+<h2>Creating derived categorical variables</h2>
+<ol style="list-style-type: decimal">
+<li>Using the <em>HELPmiss</em> dataset from <em>mosaicData</em> package. Select <em>id</em>, <em>sex</em>, <em>i1</em>, <em>i2</em>, <em>age</em>:</li>
+</ol>
+<pre class="r"><code>data(&quot;HELPmiss&quot;, package = &quot;mosaicData&quot;)
+HELPnew_dt &lt;- data.table::setDT(HELPmiss)
+HELPnew_dt &lt;- HELPnew_dt[, .(id, sex, i1, i2, age)]
+str(HELPnew_dt)</code></pre>
+<pre><code>## Classes &#39;data.table&#39; and &#39;data.frame&#39;:   470 obs. of  5 variables:
+##  $ id : int  1 2 3 4 5 6 7 8 9 10 ...
+##   ..- attr(*, &quot;label&quot;)= chr &quot;subject ID&quot;
+##  $ sex: Factor w/ 2 levels &quot;male&quot;,&quot;female&quot;: 1 1 1 2 1 2 2 1 2 1 ...
+##   ..- attr(*, &quot;label&quot;)= chr &quot;sex&quot;
+##  $ i1 : int  13 56 0 5 10 4 13 12 71 20 ...
+##   ..- attr(*, &quot;label&quot;)= chr &quot;avg. drinks per day&quot;
+##  $ i2 : int  26 62 0 5 13 4 20 24 129 27 ...
+##   ..- attr(*, &quot;label&quot;)= chr &quot;max. drinks per day&quot;
+##  $ age: int  37 37 26 39 32 47 49 28 50 39 ...
+##   ..- attr(*, &quot;label&quot;)= chr &quot;age (years)&quot;
+##  - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt;</code></pre>
+<p>The variable <em>i1</em> is “average number of drinks per day(in last 30 days)” and <em>i2</em> is “maximum number of drinks per day(in the last 30 days)”.</p>
+<p>We want to create a new factor variable <em>drink_status</em> with 3 levels “abstinent”, “moderate”, “highrisk” based on <em>sex</em>, <em>i1</em>, and <em>i2</em>.</p>
+<ol start="2" style="list-style-type: decimal">
+<li>To test the handling of NA’s set the value of <em>i1</em> to NA for <em>id</em> == 1:</li>
+</ol>
+<pre class="r"><code>HELPnew_dt[id == 1, i1 := NA]
+head(HELPnew_dt,3)</code></pre>
+<pre><code>##    id  sex i1 i2 age
+## 1:  1 male NA 26  37
+## 2:  2 male 56 62  37
+## 3:  3 male  0  0  26</code></pre>
+<ol start="3" style="list-style-type: decimal">
+<li>Create the new variable <em>drink_status</em>:</li>
+</ol>
+<pre class="r"><code>HELPnew_dt[, drink_status := 
+  fifelse(is.na(i1), &quot;missing&quot;,
+  fifelse(i1 == 0, &quot;abstinent&quot;,
+  fifelse(i1 &lt;= 1 &amp; i2 &lt;= 3 &amp; sex == &quot;female&quot;, &quot;moderate&quot;,
+  fifelse(i1 &lt;= 1 &amp; i2 &lt;= 3 &amp; sex == &quot;male&quot; &amp; age &gt;= 65, &quot;moderate&quot;,
+  fifelse(i1 &lt;= 2 &amp; i2 &lt;= 4 &amp; sex == &quot;male&quot;, &quot;moderate&quot;, &quot;highrisk&quot;)))))]
+head(HELPnew_dt,3)</code></pre>
+<pre><code>##    id  sex i1 i2 age drink_status
+## 1:  1 male NA 26  37      missing
+## 2:  2 male 56 62  37     highrisk
+## 3:  3 male  0  0  26    abstinent</code></pre>
+<ol start="4" style="list-style-type: decimal">
+<li>Show the counts for <em>drink_status</em> values:</li>
+</ol>
+<pre class="r"><code>HELPnew_dt[, .N, by = drink_status]</code></pre>
+<pre><code>##    drink_status   N
+## 1:      missing   1
+## 2:     highrisk 372
+## 3:    abstinent  69
+## 4:     moderate  28</code></pre>
 </div>
 </div>
 

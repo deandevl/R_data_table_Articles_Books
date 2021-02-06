@@ -4,15 +4,9 @@ output:
    html_document:
     toc: yes
     toc_depth: 3
-    css: ../style.css
 params:
   date: !r Sys.Date()    
 ---
-
-```{r, warning=FALSE, message=FALSE}
-library(knitr)
-library(data.table)
-```
 
 ```{r,setup, include=FALSE, eval=TRUE}
 options(knitr.table.format = "html", width = 140)
@@ -26,6 +20,11 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width =
   <p class="abstract">Abstract</p>
   The following contains notes/R scripts on learning data.table from a this [cheat sheet](https://s3.amazonaws.com/assets.datacamp.com/img/blog/data+table+cheat+sheet.pdf). Described as the official cheat sheet for the DataCamp course.
 </div>  
+
+```{r, warning=FALSE, message=FALSE}
+library(knitr)
+library(data.table)
+```
 
 # Data Analysis the Data.Table Way
 
