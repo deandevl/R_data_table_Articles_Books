@@ -186,6 +186,12 @@ dt[, (mod_cols) := lapply(dt, length_fun)]
 dt
 ```
 
+## Compute an exprssion in `j` with `lapply()` (EX 3)
+```{r}
+dt <- data.table(x = c(1,1), y = 2:3)
+means_dt <- dt[, lapply(dt, function(x) mean(x))]
+means_dt
+```
 
 ## Subset in `i` and expressions in `j`
 Calculate the average arrival and departure delay for all the flights with "JFK" as the *origin* airport in the month of June.
@@ -219,12 +225,21 @@ ans
 ans <- flights[,c("arr_delay", "dep_delay")]
 head(ans)
 ```
-## Using column names stored in a variable with the `..` prefix
+## Select column names stored in a variable
 ```{r}
 select_cols <- c("arr_delay", "dep_delay")
 ans <- flights[,..select_cols]
 ans[1:6]
 ```
+
+## Deselect column names stored in a variable
+```{r}
+deselect_cols <- c("arr_delay", "dep_delay")
+ans <- flights[, !..deselect_cols]
+ans[1:6]
+```
+
+
 ## Deselect columns using column names
 ```{r}
 ans <- flights[, !c("arr_delay", "dep_delay")]
