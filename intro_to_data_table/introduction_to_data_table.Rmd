@@ -157,6 +157,7 @@ ans
 dt <- data.table(x = 1:2, y = 2:3)
 
 sum_fun <- function(xx = NULL){
+  browser()
   if(3 %in% xx){
     return(xx + 2)
   }else {
@@ -168,6 +169,7 @@ mod_cols <- c("x","y")
 dt[, (mod_cols) := lapply(dt,sum_fun)]
 dt
 ```
+<div class="note">Note: `sum_fun()` is receiving one column at a time from *dt*</div>
 
 ## Compute an exprssion in `j` with `lapply()` (EX 2)
 ```{r}
@@ -184,14 +186,23 @@ length_fun <- function(xx = NULL){
 mod_cols <- c("x","y") 
 dt[, (mod_cols) := lapply(dt, length_fun)]
 dt
+dim(dt)
 ```
+<div class="note">Note: `lapply()` is getting one column at a time from *dt*. This example returns just one of those columns (2,3) - 2 rows, 1 column.</div>
 
 ## Compute an exprssion in `j` with `lapply()` (EX 3)
 ```{r}
+compute_mean <- function(x){
+#  browser()
+  return(mean(x))
+}
+
 dt <- data.table(x = c(1,1), y = 2:3)
-means_dt <- dt[, lapply(dt, function(x) mean(x))]
+means_dt <- dt[, lapply(dt, compute_mean)]
 means_dt
 ```
+<div class="note">Note: The `lapply()` function is getting one column at a time from *dt*.</div>
+
 
 ## Subset in `i` and expressions in `j`
 Calculate the average arrival and departure delay for all the flights with "JFK" as the *origin* airport in the month of June.
