@@ -211,6 +211,37 @@ ans <- flights[origin == "JFK" & month == 6L, .(m_arr = mean(arr_delay), m_delay
 ans
 ```
 
+## Using brackets in `j` EX 1:
+```{r}
+dt <- as.data.table(mtcars)
+
+ans <- dt[, {tmp1 = mean(mpg); tmp2 = mean(abs(mpg-tmp1)); tmp3 = round(tmp2,2)}, by=cyl]
+ans
+```
+Note: Defaults to just returning the last object defined in the braces unnamed. 
+Note: Separation with ";".
+
+## Using brackets in `j` EX 2:
+```{r}
+dt <- as.data.table(mtcars)
+ans <- dt[, {
+  tmp1 = mean(mpg)
+  tmp2 = mean(abs(mpg-tmp1))
+  tmp3 = round(tmp2,2)}, by=cyl]
+ans
+```
+Note: Lose the semicolons when expressions are on separate lines.
+
+
+## Using brackets in `j` EX 3:
+```{r}
+dt <- as.data.table(mtcars)
+
+ans <- dt[, {tmp1 = mean(mpg); tmp2 = mean(abs(mpg-tmp1)); tmp3 = round(tmp2,2); .(mpg_mean_dif = tmp3)}, by=cyl]
+ans
+```
+Note: The `.()` control for output.
+
 ## Finding the number of rows using `.N`
 How many trips have been made in 2014 from "JFK" airport in the month of June.
 Using the length of a column:
@@ -401,6 +432,20 @@ ans[1:8]
 ans <- flights[, setorder(.SD, -dep_delay)[1:3], by = carrier]
 ans[1:12]
 ```
+
+### Use .SD to create fitted values of OLS models
+```{r}
+# first melt the data set
+data("anscombe")
+anscombe_dt <- data.table::data.table(anscombe)
+anscombe_melt_dt <- data.table::melt(anscombe_dt, measure = patterns("^x","^y"),value.name = c("X","Y"))
+
+all_fit_dt <- anscombe_melt_dt[, {
+  a_lm = lm(data = data.frame(X = .SD$X, Y = .SD$Y), formula = Y ~ X);
+  .(X = .SD$X, Y = .SD$Y, Fit = a_lm$fitted.values)}, by = variable]
+str(all_fit_dt)
+```
+
 
 # Miscellaneous
 ## Recode a column 

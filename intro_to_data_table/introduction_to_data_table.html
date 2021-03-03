@@ -215,6 +215,9 @@ summary {
 <li><a href="#compute-an-exprssion-in-j-with-lapply-ex-2">Compute an exprssion in <code>j</code> with <code>lapply()</code> (EX 2)</a></li>
 <li><a href="#compute-an-exprssion-in-j-with-lapply-ex-3">Compute an exprssion in <code>j</code> with <code>lapply()</code> (EX 3)</a></li>
 <li><a href="#subset-in-i-and-expressions-in-j">Subset in <code>i</code> and expressions in <code>j</code></a></li>
+<li><a href="#using-brackets-in-j-ex-1">Using brackets in <code>j</code> EX 1:</a></li>
+<li><a href="#using-brackets-in-j-ex-2">Using brackets in <code>j</code> EX 2:</a></li>
+<li><a href="#using-brackets-in-j-ex-3">Using brackets in <code>j</code> EX 3:</a></li>
 <li><a href="#finding-the-number-of-rows-using-.n">Finding the number of rows using <code>.N</code></a></li>
 <li><a href="#selecting-columns-using-explicit-column-string-names">Selecting columns using explicit column string names</a></li>
 <li><a href="#select-column-names-stored-in-a-variable">Select column names stored in a variable</a></li>
@@ -244,6 +247,7 @@ summary {
 <li><a href="#using-.sd-return-a-random-row-of-each-month.">Using .SD return a random row of each <em>month</em>.</a></li>
 <li><a href="#using-.sd-to-select-the-desired-row-dynamically">Using .SD to select the desired row <strong>dynamically</strong></a></li>
 <li><a href="#use-.sd-to-sort-each-carrier-group-by-descending-dep_delay-and-take-the-top-3">Use .SD to sort each carrier group by descending <em>dep_delay</em> and take the top 3</a></li>
+<li><a href="#use-.sd-to-create-fitted-values-of-ols-models">Use .SD to create fitted values of OLS models</a></li>
 </ul></li>
 </ul></li>
 <li><a href="#miscellaneous">Miscellaneous</a>
@@ -258,7 +262,7 @@ summary {
 Author: Rick Dean
 </div>
 <div>
-Article date: 2021-02-14
+Article date: 2021-03-01
 </div>
 <div class="abstract">
 <p class="abstract">
@@ -546,6 +550,44 @@ Note: The <code>lapply()</code> function is getting one column at a time from <e
 ans</code></pre>
 <pre><code>##       m_arr  m_delay
 ## 1: 5.839349 9.807884</code></pre>
+</div>
+<div id="using-brackets-in-j-ex-1" class="section level2">
+<h2>Using brackets in <code>j</code> EX 1:</h2>
+<pre class="r"><code>dt &lt;- as.data.table(mtcars)
+
+ans &lt;- dt[, {tmp1 = mean(mpg); tmp2 = mean(abs(mpg-tmp1)); tmp3 = round(tmp2,2)}, by=cyl]
+ans</code></pre>
+<pre><code>##    cyl   V1
+## 1:   6 1.19
+## 2:   4 3.83
+## 3:   8 1.79</code></pre>
+<p>Note: Defaults to just returning the last object defined in the braces unnamed. Note: Separation with “;”.</p>
+</div>
+<div id="using-brackets-in-j-ex-2" class="section level2">
+<h2>Using brackets in <code>j</code> EX 2:</h2>
+<pre class="r"><code>dt &lt;- as.data.table(mtcars)
+ans &lt;- dt[, {
+  tmp1 = mean(mpg)
+  tmp2 = mean(abs(mpg-tmp1))
+  tmp3 = round(tmp2,2)}, by=cyl]
+ans</code></pre>
+<pre><code>##    cyl   V1
+## 1:   6 1.19
+## 2:   4 3.83
+## 3:   8 1.79</code></pre>
+<p>Note: Lose the semicolons when expressions are on separate lines.</p>
+</div>
+<div id="using-brackets-in-j-ex-3" class="section level2">
+<h2>Using brackets in <code>j</code> EX 3:</h2>
+<pre class="r"><code>dt &lt;- as.data.table(mtcars)
+
+ans &lt;- dt[, {tmp1 = mean(mpg); tmp2 = mean(abs(mpg-tmp1)); tmp3 = round(tmp2,2); .(mpg_mean_dif = tmp3)}, by=cyl]
+ans</code></pre>
+<pre><code>##    cyl mpg_mean_dif
+## 1:   6         1.19
+## 2:   4         3.83
+## 3:   8         1.79</code></pre>
+<p>Note: The <code>.()</code> control for output.</p>
 </div>
 <div id="finding-the-number-of-rows-using-.n" class="section level2">
 <h2>Finding the number of rows using <code>.N</code></h2>
@@ -869,14 +911,14 @@ ans[1:8]</code></pre>
 <pre class="r"><code>ans &lt;- flights[, .SD[sample(.N, 1L)], by = month]
 ans[1:8]</code></pre>
 <pre><code>##    month year day dep_delay arr_delay carrier origin dest air_time distance hour
-## 1:     1 2014   5        19         0      UA    EWR  TPA      141      997    6
-## 2:     2 2014  15        -1        25      DL    JFK  SJU      217     1598    8
-## 3:     3 2014  23        -6        -4      US    LGA  DCA       53      214   16
-## 4:     4 2014  27        -1        29      UA    EWR  HNL      626     4962    9
-## 5:     5 2014  31        -7       -50      DL    JFK  AUS      198     1521   17
-## 6:     6 2014  30         5       -12      WN    LGA  MKE      106      738   12
-## 7:     7 2014  12        -4       -16      WN    EWR  MDW      100      711    5
-## 8:     8 2014   5         6        -3      VX    EWR  LAX      322     2454   13</code></pre>
+## 1:     1 2014  22       128       110      UA    JFK  SFO      354     2586   11
+## 2:     2 2014  28        -3       -32      UA    LGA  IAH      201     1416   18
+## 3:     3 2014   4        -3        -1      UA    EWR  ORD      127      719   14
+## 4:     4 2014  30        -3        12      WN    LGA  MDW      119      725    9
+## 5:     5 2014   4        -3        -7      B6    JFK  SAN      325     2446    9
+## 6:     6 2014  14        -1        -4      DL    LGA  MIA      160     1096   16
+## 7:     7 2014  11        -2       -31      UA    EWR  MCO      125      937   20
+## 8:     8 2014  16       113        98      B6    JFK  TPA      131     1005   23</code></pre>
 <div class="note">
 Note: in <code>sample(.N, 1L)</code> sampling takes place from 1:.N; 1L for the number of items to choose.
 </div>
@@ -913,6 +955,24 @@ ans[1:12]</code></pre>
 ## 10:      DL 2014     7  14      1087      1090    EWR  ATL       97      746    8
 ## 11:      DL 2014     2  21      1014      1007    JFK  MCO      139      944    8
 ## 12:      DL 2014     2  15      1003       994    JFK  DEN      242     1626   12</code></pre>
+</div>
+<div id="use-.sd-to-create-fitted-values-of-ols-models" class="section level3">
+<h3>Use .SD to create fitted values of OLS models</h3>
+<pre class="r"><code># first melt the data set
+data(&quot;anscombe&quot;)
+anscombe_dt &lt;- data.table::data.table(anscombe)
+anscombe_melt_dt &lt;- data.table::melt(anscombe_dt, measure = patterns(&quot;^x&quot;,&quot;^y&quot;),value.name = c(&quot;X&quot;,&quot;Y&quot;))
+
+all_fit_dt &lt;- anscombe_melt_dt[, {
+  a_lm = lm(data = data.frame(X = .SD$X, Y = .SD$Y), formula = Y ~ X);
+  .(X = .SD$X, Y = .SD$Y, Fit = a_lm$fitted.values)}, by = variable]
+str(all_fit_dt)</code></pre>
+<pre><code>## Classes &#39;data.table&#39; and &#39;data.frame&#39;:   44 obs. of  4 variables:
+##  $ variable: Factor w/ 4 levels &quot;1&quot;,&quot;2&quot;,&quot;3&quot;,&quot;4&quot;: 1 1 1 1 1 1 1 1 1 1 ...
+##  $ X       : num  10 8 13 9 11 14 6 4 12 7 ...
+##  $ Y       : num  8.04 6.95 7.58 8.81 8.33 ...
+##  $ Fit     : num  8 7 9.5 7.5 8.5 ...
+##  - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt;</code></pre>
 </div>
 </div>
 </div>
