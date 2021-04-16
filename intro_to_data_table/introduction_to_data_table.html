@@ -248,6 +248,7 @@ summary {
 <li><a href="#using-.sd-to-select-the-desired-row-dynamically">Using .SD to select the desired row <strong>dynamically</strong></a></li>
 <li><a href="#use-.sd-to-sort-each-carrier-group-by-descending-dep_delay-and-take-the-top-3">Use .SD to sort each carrier group by descending <em>dep_delay</em> and take the top 3</a></li>
 <li><a href="#use-.sd-to-create-fitted-values-of-ols-models">Use .SD to create fitted values of OLS models</a></li>
+<li><a href="#use-.sd-with-iris-data-set-and-its-factor-species">Use .SD with iris data set and its factor <em>Species</em></a></li>
 </ul></li>
 </ul></li>
 <li><a href="#miscellaneous">Miscellaneous</a>
@@ -262,7 +263,7 @@ summary {
 Author: Rick Dean
 </div>
 <div>
-Article date: 2021-03-01
+Article date: 2021-04-16
 </div>
 <div class="abstract">
 <p class="abstract">
@@ -273,6 +274,7 @@ Abstract
 <pre class="r"><code>library(knitr)
 library(data.table)
 library(mosaicData)
+library(rgl)
 library(here)
 
 current_dir &lt;- here()</code></pre>
@@ -911,14 +913,14 @@ ans[1:8]</code></pre>
 <pre class="r"><code>ans &lt;- flights[, .SD[sample(.N, 1L)], by = month]
 ans[1:8]</code></pre>
 <pre><code>##    month year day dep_delay arr_delay carrier origin dest air_time distance hour
-## 1:     1 2014  22       128       110      UA    JFK  SFO      354     2586   11
-## 2:     2 2014  28        -3       -32      UA    LGA  IAH      201     1416   18
-## 3:     3 2014   4        -3        -1      UA    EWR  ORD      127      719   14
-## 4:     4 2014  30        -3        12      WN    LGA  MDW      119      725    9
-## 5:     5 2014   4        -3        -7      B6    JFK  SAN      325     2446    9
-## 6:     6 2014  14        -1        -4      DL    LGA  MIA      160     1096   16
-## 7:     7 2014  11        -2       -31      UA    EWR  MCO      125      937   20
-## 8:     8 2014  16       113        98      B6    JFK  TPA      131     1005   23</code></pre>
+## 1:     1 2014  10        76        81      EV    EWR  MSP      165     1008   21
+## 2:     2 2014   3         0        23      B6    JFK  MCO      140      944    6
+## 3:     3 2014   6        -5        -5      EV    LGA  ROC       42      254   14
+## 4:     4 2014   9        -4       -30      UA    EWR  PHX      275     2133    7
+## 5:     5 2014   6         5         6      UA    EWR  LAX      342     2454   14
+## 6:     6 2014  29         7       -11      B6    JFK  BQN      185     1576    0
+## 7:     7 2014   5        -4        -4      B6    JFK  ACK       42      199    7
+## 8:     8 2014  21        47        50      EV    LGA  RIC       53      292   19</code></pre>
 <div class="note">
 Note: in <code>sample(.N, 1L)</code> sampling takes place from 1:.N; 1L for the number of items to choose.
 </div>
@@ -973,6 +975,27 @@ str(all_fit_dt)</code></pre>
 ##  $ Y       : num  8.04 6.95 7.58 8.81 8.33 ...
 ##  $ Fit     : num  8 7 9.5 7.5 8.5 ...
 ##  - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt;</code></pre>
+</div>
+<div id="use-.sd-with-iris-data-set-and-its-factor-species" class="section level3">
+<h3>Use .SD with iris data set and its factor <em>Species</em></h3>
+<p>Plot the “Sepal.Length”,“Petal.Length”,“Sepal.Width” in 3d space using <em>rgl::points()</em>. See <em>RmatrixPkg::plot_points_3d_demo.R</em> for an enhanced demo.</p>
+<pre class="r"><code>df &lt;- iris
+dt &lt;- data.table::setDT(df)
+select_cols &lt;- c(&quot;Species&quot;, &quot;Sepal.Length&quot;,&quot;Petal.Length&quot;,&quot;Sepal.Width&quot;)
+dt &lt;- dt[, ..select_cols]
+group_col &lt;- &quot;Species&quot;
+group_levels &lt;- dt[, levels(get(group_col))]
+pt_colors = c(&quot;red&quot;, &quot;blue&quot;, &quot;yellow&quot;)
+
+dt[, {
+  group_val &lt;- .SD[1L, get(group_col)]
+  index &lt;- which(group_levels == group_val)
+  rgl::rgl.points(x = .SD, color = pt_colors[index], size = 8.0, alpha = .4)
+}, by = get(group_col)]</code></pre>
+<pre><code>##           get V1
+## 1:     setosa 11
+## 2: versicolor 12
+## 3:  virginica 13</code></pre>
 </div>
 </div>
 </div>

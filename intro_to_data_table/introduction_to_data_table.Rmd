@@ -26,6 +26,7 @@ The following contains notes/R scripts on learning data.table from the R package
 library(knitr)
 library(data.table)
 library(mosaicData)
+library(rgl)
 library(here)
 
 current_dir <- here()
@@ -446,6 +447,25 @@ all_fit_dt <- anscombe_melt_dt[, {
 str(all_fit_dt)
 ```
 
+### Use .SD with iris data set and its factor *Species*
+
+Plot the "Sepal.Length","Petal.Length","Sepal.Width" in 3d space using *rgl::points()*. See *RmatrixPkg::plot_points_3d_demo.R* for an enhanced demo.
+
+```{r}
+df <- iris
+dt <- data.table::setDT(df)
+select_cols <- c("Species", "Sepal.Length","Petal.Length","Sepal.Width")
+dt <- dt[, ..select_cols]
+group_col <- "Species"
+group_levels <- dt[, levels(get(group_col))]
+pt_colors = c("red", "blue", "yellow")
+
+dt[, {
+  group_val <- .SD[1L, get(group_col)]
+  index <- which(group_levels == group_val)
+  rgl::rgl.points(x = .SD, color = pt_colors[index], size = 8.0, alpha = .4)
+}, by = get(group_col)]
+```
 
 # Miscellaneous
 ## Recode a column 
