@@ -255,6 +255,7 @@ summary {
 <ul>
 <li><a href="#recode-a-column">Recode a column</a></li>
 <li><a href="#creating-derived-categorical-variables">Creating derived categorical variables</a></li>
+<li><a href="#using-the-new-4.1-built-in-pipe-in-place-of-from-magrittr">Using the new 4.1 built-in pipe “|&gt;” in place of “%&gt;%” from <em>magrittr::</em></a></li>
 </ul></li>
 </ul>
 </div>
@@ -263,7 +264,7 @@ summary {
 Author: Rick Dean
 </div>
 <div>
-Article date: 2021-04-16
+Article date: 2021-05-28
 </div>
 <div class="abstract">
 <p class="abstract">
@@ -913,14 +914,14 @@ ans[1:8]</code></pre>
 <pre class="r"><code>ans &lt;- flights[, .SD[sample(.N, 1L)], by = month]
 ans[1:8]</code></pre>
 <pre><code>##    month year day dep_delay arr_delay carrier origin dest air_time distance hour
-## 1:     1 2014  10        76        81      EV    EWR  MSP      165     1008   21
-## 2:     2 2014   3         0        23      B6    JFK  MCO      140      944    6
-## 3:     3 2014   6        -5        -5      EV    LGA  ROC       42      254   14
-## 4:     4 2014   9        -4       -30      UA    EWR  PHX      275     2133    7
-## 5:     5 2014   6         5         6      UA    EWR  LAX      342     2454   14
-## 6:     6 2014  29         7       -11      B6    JFK  BQN      185     1576    0
-## 7:     7 2014   5        -4        -4      B6    JFK  ACK       42      199    7
-## 8:     8 2014  21        47        50      EV    LGA  RIC       53      292   19</code></pre>
+## 1:     1 2014   3        74        57      DL    EWR  ATL      107      746   14
+## 2:     2 2014  25        -9        -4      AA    LGA  ORD      123      733   13
+## 3:     3 2014   7        -6       -14      DL    EWR  ATL      106      746    7
+## 4:     4 2014  22        -7       -22      EV    LGA  ORF       49      296   14
+## 5:     5 2014  22       122       133      EV    EWR  CVG       91      569   21
+## 6:     6 2014  12         1       -10      DL    LGA  ATL      107      762   11
+## 7:     7 2014  30        18        11      UA    LGA  ORD      109      733   15
+## 8:     8 2014  30       -11       -26      UA    EWR  ORD      108      719    7</code></pre>
 <div class="note">
 Note: in <code>sample(.N, 1L)</code> sampling takes place from 1:.N; 1L for the number of items to choose.
 </div>
@@ -1081,6 +1082,27 @@ head(HELPnew_dt,3)</code></pre>
 ## 2:     highrisk 372
 ## 3:    abstinent  69
 ## 4:     moderate  28</code></pre>
+</div>
+<div id="using-the-new-4.1-built-in-pipe-in-place-of-from-magrittr" class="section level2">
+<h2>Using the new 4.1 built-in pipe “|&gt;” in place of “%&gt;%” from <em>magrittr::</em></h2>
+<ol style="list-style-type: decimal">
+<li>Use <em>mtcars</em> as an example:</li>
+</ol>
+<pre class="r"><code>mtcars_dt &lt;- data.table::as.data.table(mtcars)</code></pre>
+<ol start="2" style="list-style-type: decimal">
+<li>Define the bracket function <code>[</code>:</li>
+</ol>
+<pre class="r"><code>.d &lt;- `[`</code></pre>
+<ol start="3" style="list-style-type: decimal">
+<li>Use the new pipe “|&gt;”:</li>
+</ol>
+<pre class="r"><code>mtcars_avg &lt;- mtcars_dt |&gt;
+  .d(, .(mpg_avg = mean(mpg)), by = cyl)
+mtcars_avg</code></pre>
+<pre><code>##    cyl  mpg_avg
+## 1:   6 19.74286
+## 2:   4 26.66364
+## 3:   8 15.10000</code></pre>
 </div>
 </div>
 

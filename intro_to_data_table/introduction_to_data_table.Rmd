@@ -170,6 +170,7 @@ mod_cols <- c("x","y")
 dt[, (mod_cols) := lapply(dt,sum_fun)]
 dt
 ```
+
 <div class="note">Note: `sum_fun()` is receiving one column at a time from *dt*</div>
 
 ## Compute an exprssion in `j` with `lapply()` (EX 2)
@@ -517,4 +518,23 @@ head(HELPnew_dt,3)
 ```{r}
 HELPnew_dt[, .N, by = drink_status]
 ```
+
+## Using the new 4.1 built-in pipe "|>" in place of "%>%" from *magrittr::*
+1. Use *mtcars* as an example:
+```{r}
+mtcars_dt <- data.table::as.data.table(mtcars)
+```
+
+2. Define the bracket function `[`:
+```{r}
+.d <- `[`
+```
+
+3. Use the new pipe "|>":
+```{r}
+mtcars_avg <- mtcars_dt |>
+  .d(, .(mpg_avg = mean(mpg)), by = cyl)
+mtcars_avg
+```
+
 
