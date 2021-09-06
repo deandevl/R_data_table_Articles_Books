@@ -61,7 +61,6 @@ data_dt[, Movement15 := lubridate::floor_date(MovementDateTime, "15 minutes")]
 str(data_dt)
 ```
 
-
 Add a new column *Counter* that uses the `ifelse` expression:
 ```{r}
 data_dt[, Counter := ifelse(IN_OUT %chin% "IN", 1L, -1L)]

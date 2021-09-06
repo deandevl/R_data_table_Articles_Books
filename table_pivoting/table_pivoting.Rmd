@@ -1,0 +1,76 @@
+---
+title: "Creating a Pivot Table"
+output: 
+   html_document:
+    toc: yes
+    toc_depth: 3
+    css: style.css
+params:
+  date: !r Sys.Date()    
+---
+
+```{r,setup, include=FALSE, eval=TRUE}
+options(knitr.table.format = "html", width = 140)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width = 12, fig.height = 8)
+```
+
+<div>Author: Rick Dean</div>
+<div>Article date: `r params$date`</div>
+
+<div class="abstract">
+  <p class="abstract">Abstract</p>
+  The following notes/R scripts are inspired on an article challenge [Preppin'Data](https://preppindata.blogspot.com/2021/08/2021-week-36-excelling-in-prep.html).
+</div>  
+
+```{r, warning=FALSE, message=FALSE}
+library(knitr)
+library(kableExtra)
+library(data.table)
+library(here)
+
+current_dir <- here()
+```
+
+### Read the csv file 
+<div class="note">Note:  [data source](https://drive.google.com/file/d/1ObjaGQ1IbpMIedR7eBfcNLs1c8nkEN0y/view) was downloaded.</div>
+
+```{r}
+raw_dt <- data.table::fread(file.path(current_dir, "bike_stores.csv"))
+head(raw_dt)
+```
+### Remove the 'Return to Manufacturer' records under `Status` variable
+```{r}
+data_dt <- raw_dt[Status == 'Sold']
+head(data_dt)
+```
+
+### Group by `Store` and sum the `Number of Items` for each group
+```{r}
+options(datatable.optimize=1)
+store_totals_dt <- data_dt[, lapply(.SD, sum), by = Store, .SDcols = c("Number of Items")]
+data.table::setnames(store_totals_dt, "Number of Items", "Items sold per store")
+store_totals_dt
+```
+
+### Group by `Store` and `Item`and sum the `Number of Items` for each group
+```{r}
+item_totals_dt <- data_dt[, lapply(.SD, sum), by = .(Store, Item), .SDcols = c("Number of Items")]
+item_totals_dt
+```
+
+### Pivot or reshape `item_totals_dt` from long to wide (`Store` x `Item`) using `Number of Items` as the fill-in value for the table
+```{r}
+store_items_dt <- data.table::dcast(item_totals_dt, Store ~ Item, value.var =  "Number of Items")
+store_items_dt
+```
+
+### Join `store_totals_dt` (4 x 1) with `store_items_dt` (4 x 5) matched with `Store` variable
+```{r}
+# set keys
+data.table::setkey(store_totals_dt, "Store")
+data.table::setkey(store_items_dt, "Store")
+# perform join
+totals_dt <- store_totals_dt[store_items_dt]
+totals_dt
+```
+
