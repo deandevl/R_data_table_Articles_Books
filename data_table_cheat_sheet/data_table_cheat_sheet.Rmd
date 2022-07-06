@@ -236,6 +236,24 @@ DT[.(2, "C")] # select rows with V1 = 2 and V2 = "C"
 ```{r}
 DT[.(2, c("A", "C"))]
 ```
+
+## Columns with strings
+### Splitting the strings in a column using `tstrsplit`
+Define a data.table with separable string column:
+```{r}
+people_dt <- data.table(
+   name = c("Bob","Jerry","Alice","Pete","Joe"),
+   age = c(43,22,54,33,26),
+   location = c("Bardstown,KY","Albany,NY","Fort Myers,FL","Columnbus,OH","Richmond,VA")
+)
+```
+Split the `location` column into `city` and `state`:
+```{r}
+people_dt[,c("city","state") := tstrsplit(location,",")]
+people_dt
+```
+
+
 ## Advanced data table operations
 ### Using `.SD`
 `.SD` is a data.table and holds all the values of all columns, except the one specified in `by`.

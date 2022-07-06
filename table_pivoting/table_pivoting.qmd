@@ -1,0 +1,136 @@
+---
+title: "Creating a Pivot Table"
+format: 
+  html:
+    toc: true
+    toc-depth: 3
+    self-contained: true
+    code-block-bg: "#f1f3f5"
+    code-block-border-left: "#31BAE9"
+    fig-cap-location: margin
+    tbl-cap-location: margin
+    mainfont: Verdana
+    theme: journal
+    css: ../style.css
+editor: visual
+---
+
+::: author
+Author: Rick Dean <br/> Article date: July 5, 2022
+:::
+
+::: abstract_title
+Abstract
+:::
+
+::: abstract_p
+The following notes/R scripts are inspired on an article challenge [Preppin'Data](https://preppindata.blogspot.com/2021/08/2021-week-36-excelling-in-prep.html).
+:::
+
+::: {.callout-tip collapse="true"}
+## Usage Notes
+
+-   System setup:
+
+-   Install \`quarto\` executable from \<https://quarto.org\>
+
+-   To compile report:
+
+-   Inside RStudio: press \`Render\` from a recent version of RStudio
+:::
+
+## Load the Required R Packages
+
+```{r loadPackages, message=FALSE, warning=FALSE}
+library(data.table, quietly = T)
+library(ggplot2, quietly = T)
+library(RplotterPkg, quietly = T)
+library(here, quietly = T)
+
+current_dir <- here("table_pivoting")
+options(datatable.optimize=1L)
+```
+
+### Read the csv file
+
+::: note
+Note: [data source](https://drive.google.com/file/d/1ObjaGQ1IbpMIedR7eBfcNLs1c8nkEN0y/view) was downloaded.
+:::
+
+```{r}
+#| tbl-cap: Raw bike store csv data
+raw_dt <- data.table::fread(file.path(current_dir, "bike_stores.csv"))
+RplotterPkg::create_table(
+  x = raw_dt[1:6,],
+  format = "html",
+  position = "center",
+  head_col = "white",
+  head_bkgd = "black"
+)
+```
+
+### Remove the 'Return to Manufacturer' records under `Status` variable
+```{r}
+data_dt <- raw_dt[Status == 'Sold']
+```
+
+### Group by `Store`. Get the sum of `Number of Items` for each group.
+```{r}
+#| tbl-cap: Number of item totals by store
+store_totals_dt <- data_dt[, lapply(.SD, sum), by = c("Store"), .SDcols = c("Number of Items")]
+RplotterPkg::create_table(
+  x = store_totals_dt[1:4,],
+  format = "html",
+  position = "center",
+  head_col = "white",
+  head_bkgd = "black"
+)
+```
+
+### Group by `Store` and `Item`. Get the sum of `Number of Items` for each group.
+
+1. Group by `Store` + `Item` and perform a sum of `Number of Items` across the groups:
+```{r}
+item_totals_dt <- data_dt[, lapply(.SD, sum), by = c("Store","Item"), .SDcols = c("Number of Items")]
+```
+
+2. Pivot or reshape `item_totals_dt` from long rows of `Store` + `Item` values to wide set of columns of `Item` values:
+```{r}
+#| tbl-cap: Number of item totals by store + item
+item_totals_wide_dt <- data.table::dcast(item_totals_dt, Store ~ Item, value.var = "Number of Items")
+
+RplotterPkg::create_table(
+  x = item_totals_wide_dt[1:4,],
+  format = "html",
+  position = "center",
+  head_col = "white",
+  head_bkgd = "black"
+)
+```
+
+### Join `store_totals_dt` with `item_totals_wide_dt`
+
+The join between the two `data.table`'s is based on matching their common column `Store`.
+1. Set the keys for both `data.table`s':
+```{r}
+data.table::setkey(item_totals_wide_dt, "Store")
+data.table::setkey(store_totals_dt, "Store")
+```
+
+2. Perform the join:
+```{r}
+#| tbl-cap: Final number of item totals
+final_dt <- store_totals_dt[item_totals_wide_dt]
+
+RplotterPkg::create_table(
+  x = final_dt[1:4,],
+  format = "html",
+  position = "center",
+  head_col = "white",
+  head_bkgd = "black"
+)
+```
+
+::: note
+Note that the data.table `final_dt` agrees with the article's outcome.
+:::

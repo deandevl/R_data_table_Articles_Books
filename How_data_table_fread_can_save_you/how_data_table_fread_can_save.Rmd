@@ -4,7 +4,7 @@ output:
    html_document:
     toc: yes
     toc_depth: 3
-    css: ../../style.css
+    css: ../style.css
 params:
   date: !r Sys.Date()    
 ---
@@ -34,8 +34,8 @@ library(pryr)
 current_dir <- here()
 ```
 
-# Compare Timing `utils::read.csv()`, `readr::read_csv()`, and `data.table::fread()`
-## Establish data directory
+## Compare Timing `utils::read.csv()`, `readr::read_csv()`, and `data.table::fread()`
+### Establish data directory
 
 <div class="note">Note: We are using the [Airline on-time performance data](http://stat-computing.org/dataexpo/2009/the-data.html) referenced in the article.</div>
 
@@ -47,21 +47,21 @@ if(!base::file.exists(source_file)){
 }
 ```
 
-## Using `utils::read.csv()`
+### Using `utils::read.csv()`
 Read and time airline data using `utils::read.csv()`
 ```{r}
 tictoc::tic("utils::read.csv()")
 base_airline_df <- utils::read.csv(source_file)
 tictoc::toc()
 ```
-## Using `readr::read_csv()`
+### Using `readr::read_csv()`
 Read and time airline data using `readr::read_csv()`
 ```{r}
 tictoc::tic("readr::read_csv()")
 readr_airline_df <- readr::read_csv(source_file, progress = F)
 tictoc::toc()
 ```
-## Using `data.table::fread()`
+### Using `data.table::fread()`
 Read and time airline data using `data.table::fread()`
 ```{r}
 tictoc::tic("data.table::fread()")
@@ -69,7 +69,7 @@ fread_airline_df <- data.table::fread(source_file)
 tictoc::toc()
 ```
 
-# Compare memory usage
+## Compare memory usage
 Memory change for `utils::read.csv()`
 ```{r}
 pryr::mem_change(utils::read.csv(source_file))
@@ -85,7 +85,7 @@ Memory change for `data.table::fread()`
 pryr::mem_change(data.table::fread(source_file))
 ```
 
-# Compare data frame size
+## Compare data frame size
 Data frame size for `utils::read.csv()`
 ```{r}
 pryr::object_size(base_airline_df)

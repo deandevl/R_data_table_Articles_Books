@@ -1,0 +1,175 @@
+---
+title: "R data.table Symbols and Operators"
+format: 
+  html:
+    toc: true
+    toc-depth: 3
+    self-contained: true
+    code-block-bg: "#f1f3f5"
+    code-block-border-left: "#31BAE9"
+    fig-cap-location: margin
+    tbl-cap-location: margin
+    mainfont: Verdana
+    theme: journal
+    css: ../style.css
+editor: visual
+---
+
+::: author
+Author: Rick Dean <br/> Article date: July 5, 2022
+:::
+
+::: abstract_title
+Abstract
+:::
+
+::: abstract_p
+The following R script was inspired by the article [R data.table symbols and operators you should know](https://www.infoworld.com/article/3530348/r-datatable-symbols-and-operators-you-should-know.html) by Sharon Machlis.
+:::
+
+::: {.callout-tip collapse="true"}
+## Usage Notes
+
+* System setup:
+  + Install \`quarto\` executable from \<https://quarto.org\>
+
+* To compile report inside RStudio:
+  + open file `R_data_table_symbols_operators.qmd`
+  + press \`Render\` from a recent version of RStudio
+:::
+
+## Load the Required R Packages
+
+```{r loadPackages, message=FALSE, warning=FALSE}
+library(data.table, quietly = T)
+library(ggplot2, quietly = T)
+library(RplotterPkg, quietly = T)
+library(here, quietly = T)
+
+current_dir <- here()
+```
+
+## Read data/select columns
+
+We will be using the 2019 Stack Overflow developers survey with over 80,000 responses.
+
+### Read using `data.table::fread()`
+
+```{r}
+file_path <- file.path(current_dir, "data", "survey_results_public.csv")
+mydt_dt <- data.table::fread(file = file_path)
+```
+
+### Select columns
+
+1.  Alternative 1: The symbol `.()` is a shortcut for list() inside data.table brackets. Use it to select unquoted list of column names.
+
+```{r}
+dt1_dt <- mydt_dt[, .(LanguageWorkedWith, LanguageDesireNextYear, 
+            OpenSourcer, CurrencySymbol, ConvertedComp, 
+            Hobbyist)]
+```
+
+2.  Alternative 2: Using the `..` symbol with a variable character vector of column names. "Moving up one namespace to the global environment"
+
+```{r}
+mycols <- c("LanguageWorkedWith", "LanguageDesireNextYear", 
+   "OpenSourcer", "CurrencySymbol", "ConvertedComp", "Hobbyist")
+dt1_dt <- mydt_dt[, ..mycols]
+```
+
+## Count rows
+
+### Using symbol `.N`
+
+1.  Count rows of data.table.
+
+```{r}
+my_rows_N <- mydt_dt[, .N]
+```
+
+2.  Count rows of a variable's subgroups.
+
+```{r}
+hobbyist_rows_N <- mydt_dt[, .N, Hobbyist]
+```
+
+3.  Count rows of several variables' subgroups using list symbol `.()`.
+
+```{r}
+hobbyist_OpenSourcer_rows_N <- mydt_dt[, .N, .(Hobbyist, OpenSourcer)]
+```
+
+4.  Order the subgroups by the number of rows using a chained `order()` function. "...order first by `Hobbyist` and then number of rows descending"
+
+```{r}
+hobbyist_OpenSourcer_rows_N <- mydt_dt[, .N, .(Hobbyist, OpenSourcer)][order(Hobbyist, -N)]
+```
+
+## Add columns
+
+### Using the "walrus operator" `:=`
+
+1.  Add a column to `dt1_dt` that shows if respondent is a Python user using the `ifelse()` function.
+
+```{r}
+dt1_dt[, PythonUser := ifelse(LanguageWorkedWith %like% "Python", TRUE, FALSE)]
+```
+
+2.  Add a column to `dt1_dt` that shows if respondent is an R user using `ifelse()` function and regular expression. "Find a pattern that starts with a word boundary -- the `\\b`, then an `R`, and then end with another word boundary."
+
+```{r}
+dt1_dt[, RUser := ifelse(LanguageWorkedWith %like% "\\bR\\b", TRUE, FALSE)]
+```
+
+3.  Turn the `:=` operator into a function to do both at the same time. "...turn the walrus operator into a function by backquoting it"
+
+```{r}
+dt1_dt[, `:=`(
+  PythonUser = ifelse(LanguageWorkedWith %like% "Python", TRUE, FALSE),
+  RUser = ifelse(LanguageWorkedWith %like% "\\bR\\b", TRUE, FALSE)
+)]
+```
+
+## More useful operators
+
+### `%between%` operator
+
+"...filter all responses where compensation was between 50,000 and 100,000 paid in US dollars" "Note that the %between% operator includes both the lower and upper values..."
+
+```{r}
+comp_50_100k_dt <- dt1_dt[CurrencySymbol == "USD" & ConvertedComp %between% c(50000, 100000)]
+```
+
+### `%chin%` operator
+
+"...filter for all rows where OpenSourcer column was either 'Never' or 'Less than once per year'..."
+
+```{r}
+rare_os_dt <- dt1_dt[OpenSourcer %chin% c("Never", "Less than once per year")]
+```
+
+## `fcase()` function
+
+Start with a data.table with just people who reported compensation in US dollars.
+
+```{r}
+usd_dt <- dt1_dt[CurrencySymbol == "USD" & !is.na(ConvertedComp)]
+```
+
+"...create a new column called Language for whether someone uses just R, just Python, both, or neither"
+
+```{r}
+usd_dt[, Language := fcase(
+  RUser & !PythonUser, "R",
+  PythonUser & !RUser, "Python",
+  PythonUser & RUser, "Both",
+  !PythonUser & !RUser, "Neither"
+)]
+```
+
+## Final quotes
+
+"A caution: If you're using RStudio, the data.table structure doesn't automatically update in the top right RStudio pane after you create a new column with the walrus operator. You need to manually click the refresh icon to see changes in the number of columns."
+
+"There are a few other symbols I won't cover in this article. You can find a list of them in the "special symbols" data.table help file by running help("special-symbols")."

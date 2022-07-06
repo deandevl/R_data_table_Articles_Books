@@ -6,6 +6,14 @@
   margin-right: 15px;
 }
 
+.title {
+  font-family: Verdana;
+}
+
+.anchored {
+  font-family: Verdana;
+}
+
 div {
   font-size: 13pt;
 }
@@ -14,13 +22,18 @@ p {
   margin: 0 0 10px;
 }
 
-div.abstract {
-  margin: auto;
-  width: 90%;
+.author{
+  font-weight: bold;
+  font-size: 16px;
 }
 
-p.abstract {
+.abstract_title {
   text-align: center;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.abstract_p {
   font-weight: bold;
 }
 
@@ -64,3 +77,8 @@ pre code {
   color: darkorange;
 }
 
+.takeaway {
+  font-size: 14pt;
+  font-weight: bold;
+  font-style: italic;
+}
