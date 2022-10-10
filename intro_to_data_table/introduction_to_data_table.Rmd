@@ -27,6 +27,8 @@ library(knitr)
 library(data.table)
 library(mosaicData)
 library(rgl)
+library(ggplot2)
+library(magrittr)
 library(here)
 
 current_dir <- here()
@@ -400,6 +402,29 @@ ans <- flights[carrier == "AA",
                .SDcols = c("dep_delay", "arr_delay")]
 ans[1:6]
 ```
+
+### Using `.SD` to compute means and .N for each group:
+
+1. Create the data.table:
+```{r}
+child_poverty_dt <- data.table::as.data.table(ggplot2::midwest) %>%
+  .[, .(state, county, perchsd, percchildbelowpovert)] %>%
+  .[, state := as.factor(state)] %>%
+  data.table::setorderv(., cols = "percchildbelowpovert", order = -1) %>%
+  data.table::setnames(., old = c("state", "perchsd", "percchildbelowpovert"),
+                       new = c("State", "High_School", "Child_Poverty"))
+
+str(child_poverty_dt)
+```
+
+2. Create the subgroups:
+```{r}
+mean_child_poverty_dt <- child_poverty_dt[, .(N = .N,  Mean_Child_Poverty = unlist(lapply(.SD, mean))), by = State, .SDcols = "Child_Poverty"] %>%
+data.table::setorderv(., cols = c("Mean_Child_Poverty"), order = -1)
+str(mean_child_poverty_dt)
+
+```
+
 ### Using `.SD` return the first two rows for each *month*.
 ```{r}
 ans <- flights[, .SD[1:2], by = month]
